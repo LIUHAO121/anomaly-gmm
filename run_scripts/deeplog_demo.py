@@ -8,6 +8,10 @@ from tods.sk_interface.detection_algorithm.DeepLog_skinterface import DeepLogSKI
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -23,70 +27,46 @@ import numpy as np
 import pandas as pd
 import os
 
+from run_scripts.plot_tools import plot_anomal_multi_columns,plot_anomal_multi_columns_3d,plot_multi_columns,plot_one_column,plot_one_column_dense,plot_predict
 
 
 
-def plot_one_column(df,col_name,save_path):
-    fig = plt.figure(facecolor='white')
-    ax = fig.add_subplot(111)
-    plt.plot(df[col_name], label=col_name)
-    plt.legend()
-    plt.savefig(save_path)
- 
-def plot_one_column_dense(df,col_name,save_path):
-    fig = plt.figure(facecolor='white')
-    ax = fig.add_subplot(111)
-    sns.kdeplot(df[col_name],label=col_name)
-    plt.legend()
-    plt.savefig(save_path)
-
-def plot_multi_columns(df,col_names,save_path):
-    fig = plt.figure(facecolor='white')
-    ax = fig.add_subplot(111)
-    for col_name in col_names:
-        plt.plot(df[col_name], label=col_name)
-    plt.legend(col_names,title='multi columns')
-    plt.savefig(save_path)
-        
-     
-result = pd.read_csv('datasets/anomaly/raw_data/block_chain.csv')   
+    
+data_path = 'datasets/anomaly/raw_data/yahoo_sub_5.csv'
+dataset_name = "yahoo_sub_5"
 plot_root = "run_scripts/out/imgs"
-plot_one_column(result, 'Blocks', os.path.join(plot_root,"Blocks.png"))
-plot_one_column_dense(result, 'Blocks', os.path.join(plot_root,"Blocks_dense.png"))
+train_cols = ['value_0','value_1','value_2','value_3','value_4']
+anomal_col = 'anomaly'
+plot_cols = ['value_0','value_1','value_4']
 
 
-plot_one_column(result, 'Output_Satoshis', os.path.join(plot_root,"Output_Satoshis.png"))
-plot_one_column(result, 'Transactions', os.path.join(plot_root,"Transactions.png"))
+dataset = pd.read_csv(data_path)   
+plot_anomal_multi_columns(dataset,train_cols,anomal_col,os.path.join(plot_root, f"{dataset_name}.png"))
+plot_anomal_multi_columns_3d(dataset,plot_cols, anomal_col, os.path.join(plot_root, f"{dataset_name}_3d.png"))
 
 
-data = result[['Output_Satoshis','Blocks','Transactions']]
-outliers_fraction=0.05
+data = dataset[train_cols]
+
 scaler = StandardScaler()
 np_scaled = scaler.fit_transform(data)
 data = pd.DataFrame(np_scaled).to_numpy()
 
-transformer_DL = DeepLogSKI(window_size=10, stacked_layers=1, contamination=0.1, epochs=1)
+
+# train
+transformer_DL = DeepLogSKI(window_size=10, stacked_layers=1, contamination=0.01, epochs=10)
 transformer_DL.fit(data)
 prediction_labels_DL = transformer_DL.predict(data)
 prediction_score_DL = transformer_DL.predict_score(data)
 
 
-result['anomaly_DeepLog'] = pd.Series(prediction_labels_DL.flatten())
-result['anomaly_DeepLog'] = result['anomaly_DeepLog'].apply(lambda x: x == 1)
-result['anomaly_DeepLog'] = result['anomaly_DeepLog'].astype(int)
-result['anomaly_DeepLog'].value_counts()
+# dataset['anomaly_DeepLog'] = pd.Series(prediction_labels_DL.flatten())
+# dataset['anomaly_DeepLog'] = dataset['anomaly_DeepLog'].apply(lambda x: x == 1)
+# dataset['anomaly_DeepLog'] = dataset['anomaly_DeepLog'].astype(int)
+# dataset['anomaly_DeepLog'].value_counts()
 
-fig, ax = plt.subplots(figsize=(10,6))
 
-#anomaly
-a = result.loc[result['anomaly_DeepLog'] == 1]
-outlier_index=list(a.index)
-ax.plot(result['Transactions'], color='black', label = 'Normal', linewidth=1.5)
-ax.scatter(a.index ,a['Transactions'], color='red', label = 'Anomaly', s=16)
-ax.plot(pd.Series(prediction_score_DL.flatten()*10), color='blue', label = 'Score', linewidth=0.5)
-
-plt.legend()
-plt.title("Anamoly Detection Using DeepLog")
-plt.xlabel('Date')
-plt.ylabel('Transactions')
-plt.savefig(os.path.join(plot_root,"predict.png"))
+# eval
+y_true = dataset[anomal_col]
+y_pred = pd.Series(prediction_labels_DL.flatten())
+print('Accuracy Score: ', accuracy_score(y_true, y_pred))
+print(classification_report(y_true, y_pred))

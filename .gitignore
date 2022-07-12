@@ -116,4 +116,5 @@ example_pipeline.json
 tmp.txt
 
 benchmark/realworld_data/data/*.csv
-run_scripts/out.*
+run_scripts/out/*
+datasets/SMD/*
