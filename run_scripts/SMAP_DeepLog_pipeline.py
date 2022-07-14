@@ -37,13 +37,6 @@ for device in gpu_devices:
     tf.config.experimental.set_memory_growth(device, True)
     
     
-machine_names = ["machine-1-1",  "machine-1-4",  "machine-1-7",  "machine-2-2",  "machine-2-5",  "machine-2-8",  "machine-3-10",  "machine-3-3",  "machine-3-6",  "machine-3-9",
-                "machine-1-2",  "machine-1-5", "machine-1-8",  "machine-2-3",  "machine-2-6",  "machine-2-9", "machine-3-11",  "machine-3-4",  "machine-3-7",
-                "machine-1-3",  "machine-1-6",  "machine-2-1",  "machine-2-4",  "machine-2-7",  "machine-3-1",  "machine-3-2",   "machine-3-5",  "machine-3-8"]
-
-train_suffix = "_train.pkl"
-test_suffix = "_test.pkl"
-test_label_suffix = "_test_label.pkl"
 
 
 train_args = {
@@ -52,13 +45,13 @@ train_args = {
     "contamination":0.1, 
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "epochs":6,
-    "dataset_dir":'datasets/SMD',
-    "dataset_name":"SMD",
-    "dataset_dim":38,
+    "dataset_dir":'datasets/SMAP',
+    "dataset_name":"SMAP",
+    "dataset_dim":25,
     "batch_size":50,
     "anomal_col":"anomaly",
     "hidden_size":64,
-    "plot":False,
+    "plot":True,
     "plot_dir": "run_scripts/out/imgs",
     "metrics_dir": "run_scripts/out/metric",
     "important_cols":['1','9','10','12','13','14','15','23'],
@@ -107,12 +100,13 @@ def plot_after_train(args,df,predict):
                      save_path=os.path.join(args['plot_dir'],'{}_{}_predict.png'.format(args['dataset_name'],col)))
 
 
-def prepare_data(args,machine_name):
+
+def prepare_data(args):
     # path
     dataset_dir = args['dataset_dir']
-    train_data_path = os.path.join(dataset_dir,machine_name + train_suffix) 
-    test_data_path = os.path.join(dataset_dir,machine_name + test_suffix) 
-    test_label_path = os.path.join(dataset_dir,machine_name + test_label_suffix) 
+    train_data_path = os.path.join(dataset_dir,"SMAP_train.pkl") 
+    test_data_path = os.path.join(dataset_dir,"SMAP_test.pkl") 
+    test_label_path = os.path.join(dataset_dir,"SMAP_test_label.pkl") 
     # read
     train_data=pickle.load(open(train_data_path,'rb'))
     test_data=pickle.load(open(test_data_path,'rb'))
@@ -148,9 +142,9 @@ def prepare_data(args,machine_name):
     return train_np , test_np, test_with_label_df 
 
 
-def train(args,machine_name):
-    args['sub_dataset'] = machine_name
-    train_np, test_np, test_with_label_df = prepare_data(args, machine_name)  # 已归一化
+def train(args):
+
+    train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
     test_anomal_num = int(np.sum(test_with_label_df[args['anomal_col']]))
     test_data_num = int(test_np.shape[0])
     
@@ -179,9 +173,8 @@ def train(args,machine_name):
     multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
     
     print("train_np.shape = ",train_np.shape)
-    print("processing machine {}".format(machine_name))
     print("test : anomal/total {}/{}".format(test_anomal_num, test_data_num))
     
 
-for n in machine_names:
-    train(args=train_args,machine_name=n)
+if __name__ == "__main__":
+    train(args=train_args)

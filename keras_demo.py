@@ -5,6 +5,10 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras import layers
 import numpy as np
 
+gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+for device in gpu_devices:
+    tf.config.experimental.set_memory_growth(device, True)
+
 input_dim = 10
 timestemps = 12
 

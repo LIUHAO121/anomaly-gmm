@@ -118,3 +118,5 @@ tmp.txt
 benchmark/realworld_data/data/*.csv
 run_scripts/out/*
 datasets/SMD/*
+datasets/MSL/*
+datasets/SMAP/*

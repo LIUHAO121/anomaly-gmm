@@ -299,13 +299,13 @@ class DeeplogLstm(BaseDetector):
         model = Sequential()
 
         #InputLayer
-        model.add(LSTM(self.hidden_size,input_shape = (self.window_size,self.n_features_),return_sequences=True,dropout = self.dropout_rate))
+        model.add(LSTM(self.hidden_size,return_sequences=True,dropout = self.dropout_rate))
         #stacked layer
         for layers in range(self.stacked_layers):
             if(layers == self.stacked_layers -1 ):
-                model.add(LSTM(self.hidden_size, return_sequences=False,dropout = self.dropout_rate))
+                model.add(LSTM(self.hidden_size, return_sequences=False, dropout = self.dropout_rate))
                 continue
-            model.add(LSTM(self.hidden_size,return_sequences=True,dropout = self.dropout_rate)) # pragma: no cover
+            model.add(LSTM(self.hidden_size, return_sequences=True, dropout = self.dropout_rate)) # pragma: no cover
         #output layer
 
         model.add(Dense(self.n_features_))
