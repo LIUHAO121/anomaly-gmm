@@ -41,7 +41,7 @@ for device in gpu_devices:
 
 
 deeplog_args = {
-    "window_size":1, 
+    "window_size":100, 
     "stacked_layers":1,
     "contamination":0.1, 
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
@@ -52,7 +52,7 @@ deeplog_args = {
     "batch_size":50,
     "anomal_col":"anomaly",
     "hidden_size":64,
-    "plot":True,
+    "plot":False,
     "plot_dir": "run_scripts/out/imgs",
     "metrics_dir": "run_scripts/out/metric",
     "important_cols":['1','9','10','12','13','14','15','23'],
@@ -87,7 +87,32 @@ lstmod_args = {
 }
 
 
-args = lstmod_args
+telemanom_args = {
+    "stacked_layers":1,
+    "contamination":0.1, 
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4],
+    "epochs":3,
+    "min_attack_time":5,
+    "hidden_dim":8,
+    "dataset_dir":'datasets/MSL',
+    "dataset_name":"MSL",
+    "dataset_dim": 55,
+    "l_s":100,
+    "layers":[64,64],   # No of units for the 2 lstm layers
+    "n_predictions":2,
+    "window_size_":1,
+    "anomal_col":"anomaly",
+    "model": "telemanom",
+    "plot": False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9', '10', '12'],
+    "use_important_cols": False,
+    "sub_dataset": "null"
+}
+
+args = telemanom_args
 
 
 def prepare_data(args):
@@ -146,12 +171,20 @@ def train(args):
     #                     hidden_size=args['hidden_size']
     #                             )
     
-    transformer_DL = LSTMODetectorSKI(
-        min_attack_time = args['min_attack_time'],
+    # transformer_DL = LSTMODetectorSKI(
+    #     min_attack_time = args['min_attack_time'],
+    #     epochs = args['epochs'],
+    #     batch_size = args['batch_size'],
+    #     hidden_dim = args['hidden_dim'],
+    #     n_hidden_layer = args['n_hidden_layer']
+    # )
+    
+    transformer_DL = TelemanomSKI(
         epochs = args['epochs'],
-        batch_size = args['batch_size'],
-        hidden_dim = args['hidden_dim'],
-        n_hidden_layer = args['n_hidden_layer']
+        l_s = args['l_s'],
+        n_predictions = args['n_predictions'],
+        layers = args['layers'],
+        window_size_ = args['window_size_']
     )
     
     transformer_DL.fit(train_np)

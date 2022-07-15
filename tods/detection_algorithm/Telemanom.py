@@ -92,7 +92,7 @@ class Hyperparams(Hyperparams_ODBase):
 
 
 	dropout = hyperparams.Hyperparameter[float](
-		default=0.3,
+		default=0.2,
 		semantic_types=['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
 		description="Dropout rate"
 	)
@@ -220,8 +220,7 @@ class TelemanomPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Params
 		
 		super().__init__(hyperparams=hyperparams, random_seed=random_seed, docker_containers=docker_containers)
 	   
-		self._clf = Detector(
-      					smoothing_perc=self.hyperparams['smoothing_perc'],
+		self._clf = Detector(smoothing_perc=self.hyperparams['smoothing_perc'],
 						window_size=self.hyperparams['window_size_'],
 						error_buffer=self.hyperparams['error_buffer'],
 						batch_size = self.hyperparams['batch_size'],
@@ -366,7 +365,7 @@ class Detector(CollectiveBaseDetector):
 		self._channel = Channel(n_predictions = self._n_predictions,l_s = self._l_s)
 		self._channel.shape_train_data(inputs)
 
-		self._model = Model(self._channel,patience = self._patience,
+		self._model = Model(self._channel, patience = self._patience,
 							  min_delta =self._min_delta,
 							  layers = self._layers,
 							  dropout = self._dropout,
@@ -424,20 +423,21 @@ class Detector(CollectiveBaseDetector):
 						)
 
 		# prediciton smoothed error
-		prediction_errors = np.reshape(errors.e_s,(self._channel.X_test.shape[0],self._channel.X_test.shape[2]))
-		prediction_errors = np.sum(prediction_errors,axis=1)
+		prediction_errors = np.reshape(errors.e_s, (self._channel.X_test.shape[0], self._channel.X_test.shape[2]))
+		prediction_errors = np.sum(prediction_errors, axis=1)
 
+		scores = np.zeros(inputs.shape[0])
+		scores[self._l_s:-self._n_predictions+1] = prediction_errors
+  
 		left_indices = []
 		right_indices = []
-		scores = []
+		
 		for i in range(len(prediction_errors)):
 			left_indices.append(i)
 			right_indices.append(i+self._l_s)
-			scores.append(prediction_errors[i])
+			
 
-
-		
-		return np.asarray(scores),np.asarray(left_indices),np.asarray(right_indices)
+		return np.asarray(scores), np.asarray(left_indices), np.asarray(right_indices)
 
 
 

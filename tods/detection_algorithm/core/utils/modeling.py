@@ -85,20 +85,21 @@ class Model:
 
         self.model.add(LSTM(
             self._layers[0],
-            input_shape=(None, channel.X_train.shape[2]),
+            dropout = self._dropout,
             return_sequences=True))
-        self.model.add(Dropout(self._dropout))
+        # self.model.add(Dropout(self._dropout))
 
         self.model.add(LSTM(
             self._layers[1],
+            dropout = self._dropout,
             return_sequences=False))
-        self.model.add(Dropout(self._dropout))
+        # self.model.add(Dropout(self._dropout))
 
         self.model.add(Dense(
             self._n_predictions
             *channel.X_train.shape[2]
             ))
-        self.model.add(Activation('linear'))
+        # self.model.add(Activation('linear'))
 
         self.model.compile(loss=self._loss_metric,
                            optimizer=self._optimizer)
@@ -110,7 +111,7 @@ class Model:
                        channel.y_train,
                        batch_size=self._lstm_batch_size,
                        epochs=self._epochs,
-                       shuffle=False,
+                    #    shuffle=False,
                        validation_split=self._validation_split,
                        callbacks=cbs,
                        verbose=True)

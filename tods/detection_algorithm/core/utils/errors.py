@@ -67,10 +67,11 @@ class Errors:
         
         
         # raw prediction error
-        self.e = [abs(y_h-y_t) for y_h, y_t in
-                  zip(channel.y_hat, channel.y_test)]
+        # self.e = [abs(y_h-y_t) for y_h, y_t in
+        #           zip(channel.y_hat, channel.y_test)]
+        self.e = np.abs(channel.y_hat - channel.y_test)
 
-        self.e = np.reshape(self.e,(channel.X_test.shape[0],self._n_predictions,channel.X_test.shape[2]))
+        self.e = np.reshape(self.e,(channel.X_test.shape[0],self._n_predictions, channel.X_test.shape[2]))
         # print("raw shape",self.e.shape)
 
         n_pred = self._n_predictions
@@ -95,7 +96,7 @@ class Errors:
         # Aggregation sequence wise
         aggregated_error = []
         for i in range(0,len(self.e)):
-            aggregated_error.append(np.sum(self.e[i],axis=0))
+            aggregated_error.append(np.sum(self.e[i], axis=0))
 
         aggregated_error = np.asarray(aggregated_error)
         # print(aggregated_error.shape)

@@ -61,7 +61,7 @@ class Channel:
         # print("n_pred",self.config.n_predictions)
         data = []
 
-        for i in range(len(arr) - self._l_s - self._n_predictions):
+        for i in range(len(arr) - self._l_s - self._n_predictions + 1):
             data.append(arr[i:i + self._l_s + self._n_predictions])
         data = np.array(data)
         # print("data shape",data.shape)
@@ -78,7 +78,7 @@ class Channel:
         
         self.X_train = data[:, :-self._n_predictions, :]
         self.y_train = data[:, -self._n_predictions:, :]  # telemetry value is at position 0
-        self.y_train = np.reshape(self.y_train,(self.y_train.shape[0],self.y_train.shape[1]*self.y_train.shape[2]))
+        self.y_train = np.reshape(self.y_train,(self.y_train.shape[0], self.y_train.shape[1]*self.y_train.shape[2]))
         
 
         
@@ -86,13 +86,13 @@ class Channel:
     def shape_test_data(self, arr):
         data = []
 
-        for i in range(len(arr) - self._l_s - self._n_predictions):
+        for i in range(len(arr) - self._l_s - self._n_predictions + 1):
             data.append(arr[i:i + self._l_s + self._n_predictions])
         data = np.array(data)
         # print("data shape",data.shape)
         self.X_test = data[:, :-self._n_predictions, :]
-        self.y_test = data[:, -self._n_predictions:, :]  # telemetry value is at position 0
-        self.y_test = np.reshape(self.y_test,(self.y_test.shape[0],self.y_test.shape[1]*self.y_test.shape[2]))
+        self.y_test = data[:,  -self._n_predictions:, :]  # telemetry value is at position 0
+        self.y_test = np.reshape(self.y_test, (self.y_test.shape[0], self.y_test.shape[1]*self.y_test.shape[2]))
 
 
     # def load_data(self):

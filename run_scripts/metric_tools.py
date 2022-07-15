@@ -25,7 +25,7 @@ def calc_point2point(predict, actual):
 
 def adjust_predicts(args, pred, label,threshold):
     
-    assert len(pred) == len(label)
+    assert len(pred) == len(label),"len(pred) = {},len(label) = {} ".format(len(pred),len(label))
 
     predict = pred >= threshold
     predict = np.asarray(predict).astype(int)
@@ -67,11 +67,11 @@ def multi_threshold_eval(args,pred_score,label):
                                     label=label,
                                     threshold=threshold)
         f1, precision, recall, TP, TN, FP, FN = calc_point2point(adjust_predict,label)
-        res['contamination'].append(round(contamination,3))
-        res['thresholds'].append(round(threshold,2))
-        res['precision'].append(round(precision,2))
-        res['recall'].append(round(recall,2))
-        res['f1'].append(round(f1,2))
+        res['contamination'].append(round(contamination,4))
+        res['thresholds'].append(round(threshold,4))
+        res['precision'].append(round(precision,4))
+        res['recall'].append(round(recall,4))
+        res['f1'].append(round(f1,4))
     res = pd.DataFrame(res)
     print(res)
     res.to_csv(os.path.join(args['metrics_dir'],"{}_{}_{}.csv".format(args['dataset_name'], args['model'], args['sub_dataset'])))
