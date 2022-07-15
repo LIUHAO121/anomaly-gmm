@@ -220,7 +220,8 @@ class TelemanomPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Params
 		
 		super().__init__(hyperparams=hyperparams, random_seed=random_seed, docker_containers=docker_containers)
 	   
-		self._clf = Detector(smoothing_perc=self.hyperparams['smoothing_perc'],
+		self._clf = Detector(
+      					smoothing_perc=self.hyperparams['smoothing_perc'],
 						window_size=self.hyperparams['window_size_'],
 						error_buffer=self.hyperparams['error_buffer'],
 						batch_size = self.hyperparams['batch_size'],

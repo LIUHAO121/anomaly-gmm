@@ -23,7 +23,7 @@ def calc_point2point(predict, actual):
     return f1, precision, recall, TP, TN, FP, FN
 
 
-def adjust_predicts(pred, label,threshold):
+def adjust_predicts(args, pred, label,threshold):
     
     assert len(pred) == len(label)
 
@@ -44,8 +44,9 @@ def adjust_predicts(pred, label,threshold):
                         break
                     else:
                         if not predict[j]:
-                            predict[j] = True
-                            latency += 1
+                            if args['dataset_name'] != "SMD":
+                                predict[j] = True
+                                latency += 1
         elif not actual[i]:
             anomaly_state = False
         if anomaly_state:
@@ -61,6 +62,7 @@ def multi_threshold_eval(args,pred_score,label):
     for contamination in contaminations:
         threshold = np.percentile(pred_score, 100 * (1 - contamination))
         adjust_predict = adjust_predicts(
+                                    args=args,
                                     pred=pred_score,
                                     label=label,
                                     threshold=threshold)

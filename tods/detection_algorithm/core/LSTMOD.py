@@ -54,23 +54,6 @@ class LSTMOutlierDetector(CollectiveBaseDetector):
         self.activation = activation
 
 
-    # def _build_model(self):
-    #     print('dim:', self.hidden_dim, self.feature_dim)
-    #     model_ = Sequential()
-    #     model_.add(LSTM(units=self.hidden_dim, input_shape=(self.feature_dim, 1),
-    #                          dropout=self.dropout_rate, activation=self.activation, return_sequences=True))
-
-    #     for layer_idx in range(self.n_hidden_layer-1):
-    #         model_.add(LSTM(units=self.hidden_dim, input_shape=(self.hidden_dim, 1),
-    #                          dropout=self.dropout_rate, activation=self.activation, return_sequences=True))
-
-    #     model_.add(LSTM(units=self.hidden_dim, input_shape=(self.hidden_dim, 1),
-    #                          dropout=self.dropout_rate, activation=self.activation))
-
-    #     model_.add(Dense(units=self.feature_dim, input_shape=(self.hidden_dim, 1), activation=None))
-
-    #     model_.compile(loss=self.loss, optimizer=self.optimizer)
-    #     return model_
 
     def _build_model(self):
         model_ = Sequential()
@@ -80,8 +63,8 @@ class LSTMOutlierDetector(CollectiveBaseDetector):
 
         for layer_idx in range(self.n_hidden_layer):
             model_.add(LSTM(units=self.hidden_dim, 
-                             dropout=self.dropout_rate, activation=self.activation,
-                             return_sequences=bool(layer_idx < self.n_hidden_layer - 1)))
+                            dropout=self.dropout_rate, activation=self.activation,
+                            return_sequences=bool(layer_idx < self.n_hidden_layer - 1)))
 
         model_.add(Dense(units=self.feature_dim, activation=None))
 
@@ -195,7 +178,6 @@ class LSTMOutlierDetector(CollectiveBaseDetector):
             averaged_relative_error /= calculated_times
             # print(danger_coefficient, averaged_relative_error)
                 
-
         else: # pragma: no cover
             danger_coefficient = np.zeros(relative_error.shape)
             averaged_relative_error = np.zeros(relative_error.shape)

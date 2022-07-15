@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import os
 
 
 
@@ -59,7 +59,7 @@ def plot_multi_columns(df,col_names,save_path):
 def plot_anomal_multi_columns(df, col_names, anomal_col,save_path):
     a = df.loc[df[anomal_col] == 1]
     outlier_index=list(a.index)
-    print("outlier_index: ",outlier_index)
+    # print("outlier_index: ",outlier_index)
     fig, ax = plt.subplots(figsize=(10,6))   
     for col_name in col_names:
         ax.plot(df[col_name], label=col_name)
@@ -73,7 +73,7 @@ def plot_anomal_multi_columns_3d(df,col_names, anomal_col,save_path):
     assert len(col_names) <= 3 ,"too many cols for 3d plot"
     a = df.loc[df[anomal_col] == 1]
     outlier_index=list(a.index)
-    print("outlier_index: ",outlier_index)
+    # print("outlier_index: ",outlier_index)
     fig = plt.figure(figsize=(25,25))
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(df[col_names[0]], 
@@ -88,3 +88,40 @@ def plot_anomal_multi_columns_3d(df,col_names, anomal_col,save_path):
     ax.legend()
     plt.savefig(save_path)
     
+    
+def plot_before_train(args, df):
+    # df = df.iloc[15000:17000,:]
+    """
+    df 必须包括标注列
+    """
+    for col in df.columns[:-1]:
+        plot_one_column_with_label(
+            df=df,
+            col_name=col,
+            anomal_col=args['anomal_col'],
+            save_path=os.path.join(args['plot_dir'],"{}_{}.png".format(args['dataset_name'],col)))
+        
+    plot_anomal_multi_columns_3d(
+                        df,
+                        col_names=args['plot_cols'],
+                        anomal_col=args['anomal_col'],
+                        save_path=os.path.join(args['plot_dir'],'{}_multicols_3d.png'.format(args['dataset_name']))
+                        )  
+
+def plot_after_train(args,df,predict):
+    
+    """
+    df 必须包括标注列
+    """
+    threshold =  np.percentile(predict, 100 * (1 - args['contamination']))
+    max_score = np.max(predict)
+    rescale_predict = predict / max_score
+    rescale_threshod = threshold / max_score
+    rescale_threshod_series = pd.Series([rescale_threshod for i in range(len(predict))])
+    for col in df.columns[:-1]:
+        plot_predict(df, 
+                     col_name=col,
+                     anomal_col=args['anomal_col'], 
+                     predict=rescale_predict, 
+                     threshold=rescale_threshod_series,
+                     save_path=os.path.join(args['plot_dir'],'{}_{}_predict.png'.format(args['dataset_name'],col)))

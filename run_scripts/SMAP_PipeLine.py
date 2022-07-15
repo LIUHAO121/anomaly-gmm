@@ -5,6 +5,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 from tods.sk_interface.detection_algorithm.Telemanom_skinterface import TelemanomSKI
 from tods.sk_interface.detection_algorithm.DeepLog_skinterface import DeepLogSKI
+from tods.sk_interface.detection_algorithm.LSTMODetector_skinterface import LSTMODetectorSKI
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
@@ -28,7 +29,7 @@ import pandas as pd
 import os
 import pickle
 
-from run_scripts.plot_tools import plot_anomal_multi_columns,plot_anomal_multi_columns_3d,plot_multi_columns,plot_one_column_with_label,plot_predict
+from run_scripts.plot_tools import plot_anomal_multi_columns,plot_anomal_multi_columns_3d,plot_multi_columns,plot_one_column_with_label,plot_predict, plot_after_train,plot_before_train
 from run_scripts.metric_tools import calc_point2point, adjust_predicts,multi_threshold_eval
 
 import tensorflow as tf
@@ -37,82 +38,65 @@ for device in gpu_devices:
     tf.config.experimental.set_memory_growth(device, True)
     
     
-machine_names = ["machine-1-1",  "machine-1-4",  "machine-1-7",  "machine-2-2",  "machine-2-5",  "machine-2-8",  "machine-3-10",  "machine-3-3",  "machine-3-6",  "machine-3-9",
-                "machine-1-2",  "machine-1-5", "machine-1-8",  "machine-2-3",  "machine-2-6",  "machine-2-9", "machine-3-11",  "machine-3-4",  "machine-3-7",
-                "machine-1-3",  "machine-1-6",  "machine-2-1",  "machine-2-4",  "machine-2-7",  "machine-3-1",  "machine-3-2",   "machine-3-5",  "machine-3-8"]
-
-train_suffix = "_train.pkl"
-test_suffix = "_test.pkl"
-test_label_suffix = "_test_label.pkl"
 
 
-train_args = {
-    "window_size":100, 
+# deep_args = {
+#     "window_size":100, 
+#     "stacked_layers":1,
+#     "contamination":0.1, 
+#     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+#     "epochs":6,
+#     "dataset_dir":'datasets/SMAP',
+#     "dataset_name":"SMAP",
+#     "dataset_dim":25,
+#     "batch_size":50,
+#     "anomal_col":"anomaly",
+#     "hidden_size":64,
+#     "plot":True,
+#     "plot_dir": "run_scripts/out/imgs",
+#     "metrics_dir": "run_scripts/out/metric",
+#     "important_cols":['1','9','10','12','13','14','15','23'],
+#     "plot_cols":['9','10','12'],
+#     "use_important_cols":False,
+#     "model":"deeplog",
+#     "sub_dataset":"null"
+# }
+
+lstmod_args = {
     "stacked_layers":1,
     "contamination":0.1, 
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "epochs":6,
-    "dataset_dir":'datasets/SMD',
-    "dataset_name":"SMD",
-    "dataset_dim":38,
-    "batch_size":50,
+    "min_attack_time":5,
+    "n_hidden_layer":2,
+    "hidden_dim":8,
+    "dataset_dir":'datasets/SMAP',
+    "dataset_name":"SMAP",
+    "dataset_dim": 25,
+    "batch_size": 50,
+    "hidden_size": 8,
     "anomal_col":"anomaly",
-    "hidden_size":64,
-    "plot":False,
+    "model": "lstmod",
+    "plot": False,
     "plot_dir": "run_scripts/out/imgs",
     "metrics_dir": "run_scripts/out/metric",
     "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9','10','12'],
-    "use_important_cols":False,
-    "model":"deeplog",
-    "sub_dataset":"null"
+    "plot_cols":['9', '10', '12'],
+    "use_important_cols": False,
+    "sub_dataset": "null"
 }
 
 
-def plot_before_train(args, df):
-    # df = df.iloc[15000:17000,:]
-    """
-    df 必须包括标注列
-    """
-    for col in df.columns[:-1]:
-        plot_one_column_with_label(
-            df=df,
-            col_name=col,
-            anomal_col=args['anomal_col'],
-            save_path=os.path.join(args['plot_dir'],"{}_{}.png".format(args['dataset_name'],col)))
-        
-    plot_anomal_multi_columns_3d(
-                        df,
-                        col_names=args['plot_cols'],
-                        anomal_col=args['anomal_col'],
-                        save_path=os.path.join(args['plot_dir'],'{}_multicols_3d.png'.format(args['dataset_name']))
-                        )  
-
-def plot_after_train(args,df,predict):
-    
-    """
-    df 必须包括标注列
-    """
-    threshold =  np.percentile(predict, 100 * (1 - args['contamination']))
-    max_score = np.max(predict)
-    rescale_predict = predict / max_score
-    rescale_threshod = threshold / max_score
-    rescale_threshod_series = pd.Series([rescale_threshod for i in range(len(predict))])
-    for col in df.columns[:-1]:
-        plot_predict(df, 
-                     col_name=col,
-                     anomal_col=args['anomal_col'], 
-                     predict=rescale_predict, 
-                     threshold=rescale_threshod_series,
-                     save_path=os.path.join(args['plot_dir'],'{}_{}_predict.png'.format(args['dataset_name'],col)))
+args = lstmod_args
 
 
-def prepare_data(args,machine_name):
+
+def prepare_data(args):
     # path
     dataset_dir = args['dataset_dir']
-    train_data_path = os.path.join(dataset_dir,machine_name + train_suffix) 
-    test_data_path = os.path.join(dataset_dir,machine_name + test_suffix) 
-    test_label_path = os.path.join(dataset_dir,machine_name + test_label_suffix) 
+    train_data_path = os.path.join(dataset_dir,"SMAP_train.pkl") 
+    test_data_path = os.path.join(dataset_dir,"SMAP_test.pkl") 
+    test_label_path = os.path.join(dataset_dir,"SMAP_test_label.pkl") 
     # read
     train_data=pickle.load(open(train_data_path,'rb'))
     test_data=pickle.load(open(test_data_path,'rb'))
@@ -148,20 +132,29 @@ def prepare_data(args,machine_name):
     return train_np , test_np, test_with_label_df 
 
 
-def train(args,machine_name):
-    args['sub_dataset'] = machine_name
-    train_np, test_np, test_with_label_df = prepare_data(args, machine_name)  # 已归一化
+def train(args):
+
+    train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
     test_anomal_num = int(np.sum(test_with_label_df[args['anomal_col']]))
     test_data_num = int(test_np.shape[0])
     
-    transformer_DL = DeepLogSKI(
-                        window_size=args['window_size'],
-                        stacked_layers=args['stacked_layers'],
-                        contamination=args['contamination'],
-                        epochs=args['epochs'],
-                        batch_size = args['batch_size'],
-                        hidden_size=args['hidden_size']
-                                )
+    # transformer_DL = DeepLogSKI(
+    #                     window_size=args['window_size'],
+    #                     stacked_layers=args['stacked_layers'],
+    #                     contamination=args['contamination'],
+    #                     epochs=args['epochs'],
+    #                     batch_size = args['batch_size'],
+    #                     hidden_size=args['hidden_size']
+    #                             )
+    
+    transformer_DL = LSTMODetectorSKI(
+        min_attack_time = args['min_attack_time'],
+        epochs = args['epochs'],
+        batch_size = args['batch_size'],
+        hidden_dim = args['hidden_dim'],
+        n_hidden_layer = args['n_hidden_layer']
+    )
+    
     transformer_DL.fit(train_np)
     prediction_labels_DL = transformer_DL.predict(test_np) # shape = (n,1)
     prediction_score_DL = transformer_DL.predict_score(test_np) # shape = (n,1)
@@ -179,9 +172,8 @@ def train(args,machine_name):
     multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
     
     print("train_np.shape = ",train_np.shape)
-    print("processing machine {}".format(machine_name))
     print("test : anomal/total {}/{}".format(test_anomal_num, test_data_num))
     
 
-for n in machine_names:
-    train(args=train_args,machine_name=n)
+if __name__ == "__main__":
+    train(args=args)
