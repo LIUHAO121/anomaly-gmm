@@ -122,6 +122,12 @@ class Hyperparams(Hyperparams_ODBase):
         description='Number of samples per gradient update.',
         semantic_types=['https://metadata.datadrivendiscovery.org/types/TuningParameter']
     )
+    
+    latent_dim = hyperparams.Hyperparameter[int](
+        default=2,
+        description='Number of samples per gradient update.',
+        semantic_types=['https://metadata.datadrivendiscovery.org/types/TuningParameter']
+    )
 
     dropout_rate = hyperparams.Uniform(
         lower=0.,
@@ -296,7 +302,7 @@ class VariationalAutoEncoderPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Ou
             'contact': 'mailto:khlai037@tamu.edu',
         },
         "version": "0.0.1",
-        "hyperparameters_to_tune": ['contamination'],
+        "hyperparameters_to_tune": ['contamination',"latent_dim"],
         "algorithm_types": [
             metadata_base.PrimitiveAlgorithmType.TODS_PRIMITIVE,
         ],
@@ -320,6 +326,7 @@ class VariationalAutoEncoderPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Ou
                         decoder_neurons=hyperparams['decoder_neurons'],
                         hidden_activation=hyperparams['hidden_activation'],
                         output_activation=hyperparams['output_activation'],
+                        latent_dim=hyperparams['latent_dim'],
                         loss=loss,
                         gamma=hyperparams['gamma'],
                         capacity=hyperparams['capacity'],

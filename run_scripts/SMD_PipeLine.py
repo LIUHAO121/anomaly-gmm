@@ -6,6 +6,10 @@ from sklearn.metrics import classification_report
 from tods.sk_interface.detection_algorithm.Telemanom_skinterface import TelemanomSKI
 from tods.sk_interface.detection_algorithm.LSTMODetector_skinterface import LSTMODetectorSKI
 from tods.sk_interface.detection_algorithm.DeepLog_skinterface import DeepLogSKI
+from tods.sk_interface.detection_algorithm.AutoEncoder_skinterface import AutoEncoderSKI
+from tods.sk_interface.detection_algorithm.LSTMAE_skinterface import LSTMAESKI
+from tods.sk_interface.detection_algorithm.VariationalAutoEncoder_skinterface import VariationalAutoEncoderSKI
+from tods.sk_interface.detection_algorithm.DAGMM_skinterface import DAGMMSKI
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
@@ -46,6 +50,9 @@ train_suffix = "_train.pkl"
 test_suffix = "_test.pkl"
 test_label_suffix = "_test_label.pkl"
 
+
+dataset_name = "SMD"
+dataset_dim = 38
 
 deeplog_args = {
     "window_size":100, 
@@ -119,7 +126,101 @@ telemanom_args = {
     "sub_dataset": "null"
 }
 
-args = telemanom_args
+ae_args = {
+    "preprocessing":False,
+    "batch_size":32,
+    "epochs":20,
+    "hidden_neurons":[20,10,20],
+    "contamination":0.1, 
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4],
+    "epochs":3,
+    "dataset_dir":'datasets/SMD',
+    "dataset_name":"SMD",
+    "dataset_dim": 38,
+    "anomal_col":"anomaly",
+    "model": "AE",
+    "plot": False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9', '10', '12'],
+    "use_important_cols": False,
+    "sub_dataset": "null"
+}
+
+
+
+lstmae_args = {
+    "preprocessing":False,
+    "hidden_neurons":[16,3,16],
+    "window_size":100, 
+    "stacked_layers":1,
+    "contamination":0.1, 
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs":6,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "batch_size":50,
+    "anomal_col":"anomaly",
+    "hidden_size":32,
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "model":"LSTMAE",
+    "sub_dataset":"null"
+}
+
+vae_args = {
+    "model":"VAE",
+    "preprocessing":False,
+    "encoder_neurons":[128, 64, 32],
+    "decoder_neurons":[32, 64, 128],
+    "latent_dim":3,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs": 6,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "batch_size":50,
+    "anomal_col":"anomaly",
+    "hidden_size":32,
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+dagmm_args = {
+    "model":"DAGMM",
+    "normalize":False,
+    "comp_hiddens":[16,8,1],
+    "est_hiddens":[8,4],
+    "minibatch_size":1024,
+    "epoch_size":100,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs": 6,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+args = dagmm_args
+
+
 
 def prepare_data(args,machine_name):
     # path
@@ -184,12 +285,45 @@ def train(args,machine_name):
     #     n_hidden_layer = args['n_hidden_layer']
     # )
     
-    transformer_DL = TelemanomSKI(
-        epochs = args['epochs'],
-        l_s = args['l_s'],
-        n_predictions = args['n_predictions'],
-        layers = args['layers'],
-        window_size_ = args['window_size_']
+    # transformer_DL = TelemanomSKI(
+    #     epochs = args['epochs'],
+    #     l_s = args['l_s'],
+    #     n_predictions = args['n_predictions'],
+    #     layers = args['layers'],
+    #     window_size_ = args['window_size_']
+    # )
+    
+    # transformer_DL = AutoEncoderSKI(
+    #     preprocessing = args["preprocessing"],
+    #     batch_size = args["batch_size"],
+    #     epochs = args["epochs"],
+    #     hidden_neurons = args["hidden_neurons"],
+    # )
+    
+    # transformer_DL = LSTMAESKI(
+    #     window_size = args['window_size'],
+    #     preprocessing = args["preprocessing"],
+    #     batch_size = args["batch_size"],
+    #     epochs = args["epochs"],
+    #     hidden_neurons = args["hidden_neurons"],
+    #     hidden_size=args['hidden_size']
+    # )
+    
+    # transformer_DL = VariationalAutoEncoderSKI(
+    #     preprocessing = args["preprocessing"],
+    #     batch_size = args["batch_size"],
+    #     epochs = args["epochs"],
+    #     encoder_neurons = args["encoder_neurons"],
+    #     decoder_neurons = args["decoder_neurons"],
+    #     latent_dim = args["latent_dim"]
+    # )
+    
+    transformer_DL = DAGMMSKI(
+        normalize = args["normalize"],
+        comp_hiddens = args["comp_hiddens"],
+        est_hiddens = args["est_hiddens"],
+        minibatch_size = args["minibatch_size"],
+        epoch_size = args["epoch_size"],
     )
     
     transformer_DL.fit(train_np)

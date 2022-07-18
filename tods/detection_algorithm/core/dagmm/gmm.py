@@ -41,12 +41,12 @@ class GMM:
             # i   : index of samples
             # k   : index of components
             # l,m : index of features
-            gamma_sum = tf.reduce_sum(gamma, axis=0)
-            self.phi = phi = tf.reduce_mean(gamma, axis=0)
-            self.mu = mu = tf.einsum('ik,il->kl', gamma, z) / gamma_sum[:,None]
-            z_centered = tf.sqrt(gamma[:,:,None]) * (z[:,None,:] - mu[None,:,:])
+            gamma_sum = tf.reduce_sum(gamma, axis=0)  # n_comp
+            self.phi = phi = tf.reduce_mean(gamma, axis=0)  # n_comp 
+            self.mu = mu = tf.einsum('ik,il->kl', gamma, z) / gamma_sum[:,None]   # (n_comp, n_features)
+            z_centered = tf.sqrt(gamma[:,:,None]) * (z[:,None,:] - mu[None, :, :])  #  (batch , n_comp, n_features) 
             self.sigma = sigma = tf.einsum(
-                'ikl,ikm->klm', z_centered, z_centered) / gamma_sum[:,None,None]
+                'ikl,ikm->klm', z_centered, z_centered) / gamma_sum[:, None, None]   # (n_comp,n_features,n_features)
 
             # Calculate a cholesky decomposition of covariance in advance
             n_features = z.shape[1]
@@ -107,18 +107,22 @@ class GMM:
             self.phi, self.mu, self.sigma, self.L = self.create_variable(z.shape[1])
 
         with tf.variable_scope("GMM_energy"):
+            # i   : index of samples
+            # k   : index of components
+            # l,m : index of features
             # Instead of inverse covariance matrix, exploit cholesky decomposition
             # for stability of calculation.
-            z_centered = z[:,None,:] - self.mu[None,:,:]  #ikl
-            v = tf.matrix_triangular_solve(self.L, tf.transpose(z_centered, [1, 2, 0]))  # kli
+            z_centered = z[:,None,:] - self.mu[None,:,:]  #  (i k l)
+            
+            # (k,l,l) solver (k,l,i) -> (k,l, i)
+            v = tf.matrix_triangular_solve(self.L, tf.transpose(z_centered, [1, 2, 0]))  
 
             # log(det(Sigma)) = 2 * sum[log(diag(L))]
             log_det_sigma = 2.0 * tf.reduce_sum(tf.log(tf.matrix_diag_part(self.L)), axis=1)
 
             # To calculate energies, use "log-sum-exp" (different from orginal paper)
             d = z.get_shape().as_list()[1]
-            logits = tf.log(self.phi[:,None]) - 0.5 * (tf.reduce_sum(tf.square(v), axis=1)
-                + d * tf.log(2.0 * np.pi) + log_det_sigma[:,None])
+            logits = tf.log(self.phi[:,None]) - 0.5 * (tf.reduce_sum(tf.square(v), axis=1) + d * tf.log(2.0 * np.pi) + log_det_sigma[:,None])
             energies = - tf.reduce_logsumexp(logits, axis=0)
 
         return energies

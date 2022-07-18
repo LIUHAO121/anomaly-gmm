@@ -44,9 +44,9 @@ def adjust_predicts(args, pred, label,threshold):
                         break
                     else:
                         if not predict[j]:
-                            if args['dataset_name'] != "SMD":
-                                predict[j] = True
-                                latency += 1
+                            # if args['dataset_name'] != "SMD":
+                            predict[j] = True
+                            latency += 1
         elif not actual[i]:
             anomaly_state = False
         if anomaly_state:
