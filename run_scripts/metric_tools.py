@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import os
+from glob import glob
 
 
 
@@ -44,9 +45,9 @@ def adjust_predicts(args, pred, label,threshold):
                         break
                     else:
                         if not predict[j]:
-                            # if args['dataset_name'] != "SMD":
-                            predict[j] = True
-                            latency += 1
+                            if args['dataset_name'] != "SMD":
+                                predict[j] = True
+                                latency += 1
         elif not actual[i]:
             anomaly_state = False
         if anomaly_state:
@@ -75,3 +76,32 @@ def multi_threshold_eval(args,pred_score,label):
     res = pd.DataFrame(res)
     print(res)
     res.to_csv(os.path.join(args['metrics_dir'],"{}_{}_{}.csv".format(args['dataset_name'], args['model'], args['sub_dataset'])))
+
+
+def merge_smd_metric(metric_dir,model):
+    columns = ['contamination', 'thresholds', 'precision', 'recall', 'f1']
+    dataset = "SMD"
+    metric_files = glob(f"{metric_dir}/{dataset}_{model}_machine*.csv")
+    res = {'contamination':[],"thresholds":[],'precision':[],'recall':[],'f1':[]}
+    df_list = []
+    
+    for f in metric_files:
+        metric_df = pd.read_csv(f)
+        df_list.append(metric_df)
+    df_num = len(df_list)
+    for col in columns:
+        value_series = pd.Series([0.0 for i in range(len(df_list[0]['contamination']))])
+        for df in df_list:
+            value_series += df[col]
+        value_series /= df_num
+        res[col] = list(value_series)
+        res[col] = [round(i,4) for i in res[col]]
+    res_df = pd.DataFrame(res)
+    res_df.to_csv(f"{metric_dir}/{dataset}_{model}_null.csv")
+        
+        
+if __name__ == "__main__":
+     metric_dir = "run_scripts/out/metric"
+     models = ["deeplog","AE","DAGMM","LSTMAE","lstmod","LSTMVAE","telemanom","VAE"]
+     for m in models:
+        merge_smd_metric(metric_dir=metric_dir,model=m)
