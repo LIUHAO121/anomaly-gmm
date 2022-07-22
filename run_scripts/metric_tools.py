@@ -100,8 +100,33 @@ def merge_smd_metric(metric_dir,model):
     res_df.to_csv(f"{metric_dir}/{dataset}_{model}_null.csv")
         
         
+def merge_all_metric(metric_dir,models):
+    datasets = ['MSL','SMAP','SMD']
+    res = {'precision':[],'recall':[],'f1':[]}
+    for d in datasets:
+        res = {'models':[],'precision':[],'recall':[],'f1':[]}
+        for m in models:
+            metric_file = os.path.join(metric_dir,f"{d}_{m}_null.csv")
+            df = pd.read_csv(metric_file)
+            best_f1_df = df[df['f1']==df['f1'].max()]
+            res['precision'].append(best_f1_df['precision'].to_list()[0])        
+            res['recall'].append(best_f1_df['recall'].to_list()[0])  
+            res['f1'].append(best_f1_df['f1'].to_list()[0])   
+            res['models'].append(m)
+        res_df = pd.DataFrame(res)
+        res_df.to_csv(os.path.join(metric_dir,f"summary/{d}_metric.csv"))
+    
+    
+    
+    
 if __name__ == "__main__":
-     metric_dir = "run_scripts/out/metric"
-     models = ["deeplog","AE","DAGMM","LSTMAE","lstmod","LSTMVAE","telemanom","VAE"]
-     for m in models:
-        merge_smd_metric(metric_dir=metric_dir,model=m)
+
+    metric_dir = "run_scripts/out/metric"
+    models = ["AE", "VAE", "DAGMM", "lstmod", "LSTMAE", "LSTMVAE", "deeplog", "telemanom"]
+    
+    # for m in models:
+        # merge_smd_metric(metric_dir=metric_dir,model=m)
+    
+    
+    merge_all_metric(metric_dir=metric_dir,models=models)
+                                

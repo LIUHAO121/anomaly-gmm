@@ -14,6 +14,7 @@ timestemps = 12
 
 # Define Sequential model with 3 layers
 model = keras.Sequential()
+# model.add(LSTM(100,return_sequences=True))
 model.add(LSTM(100))
 model.add(Dense(input_dim))
 
@@ -22,7 +23,10 @@ model.compile(loss='mean_squared_error',
                     metrics=[keras.metrics.MeanAbsoluteError()])
 
 x_train = tf.random.normal([1000, timestemps, input_dim])
+# y_train = tf.random.normal([1000,timestemps, input_dim])
 y_train = tf.random.normal([1000, input_dim])
 model.fit(x_train,y_train,batch_size=62,epochs=3)
 model.summary()
-model.save('weights/temp')
+res = model.predict(x_train)
+print(res.shape)
+# model.save('weights/temp')

@@ -114,7 +114,7 @@ class GMM:
             # for stability of calculation.
             z_centered = z[:,None,:] - self.mu[None,:,:]  #  (i k l)
             
-            # (k,l,l) solver (k,l,i) -> (k,l, i)
+            # matrix[..., :, :] * output[..., :, :] = rhs[..., :, :]
             v = tf.matrix_triangular_solve(self.L, tf.transpose(z_centered, [1, 2, 0]))  
 
             # log(det(Sigma)) = 2 * sum[log(diag(L))]

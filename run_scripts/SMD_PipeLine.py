@@ -246,7 +246,7 @@ lstmvae_args = {
     "sub_dataset":"null"
 }
 
-args = lstmvae_args
+args = deeplog_args
 
 
 
@@ -296,14 +296,14 @@ def train(args,machine_name):
     test_anomal_num = int(np.sum(test_with_label_df[args['anomal_col']]))
     test_data_num = int(test_np.shape[0])
     
-    # transformer_DL = DeepLogSKI(
-    #                     window_size=args['window_size'],
-    #                     stacked_layers=args['stacked_layers'],
-    #                     contamination=args['contamination'],
-    #                     epochs=args['epochs'],
-    #                     batch_size = args['batch_size'],
-    #                     hidden_size=args['hidden_size']
-    #                             )
+    transformer_DL = DeepLogSKI(
+                        window_size=args['window_size'],
+                        stacked_layers=args['stacked_layers'],
+                        contamination=args['contamination'],
+                        epochs=args['epochs'],
+                        batch_size = args['batch_size'],
+                        hidden_size=args['hidden_size']
+                                )
     
     # transformer_DL = LSTMODetectorSKI(
     #     min_attack_time = args['min_attack_time'],
@@ -354,16 +354,16 @@ def train(args,machine_name):
     #     epoch_size = args["epoch_size"],
     # )
     
-    transformer_DL = LSTMVAESKI(
-        window_size=args['window_size'],
-        hidden_size = args['hidden_size'],
-        preprocessing = args["preprocessing"],
-        batch_size = args["batch_size"],
-        epochs = args["epochs"],
-        latent_dim = args["latent_dim"],
-        encoder_neurons = args["encoder_neurons"],
-        decoder_neurons = args["decoder_neurons"],
-    )
+    # transformer_DL = LSTMVAESKI(
+    #     window_size=args['window_size'],
+    #     hidden_size = args['hidden_size'],
+    #     preprocessing = args["preprocessing"],
+    #     batch_size = args["batch_size"],
+    #     epochs = args["epochs"],
+    #     latent_dim = args["latent_dim"],
+    #     encoder_neurons = args["encoder_neurons"],
+    #     decoder_neurons = args["decoder_neurons"],
+    # )
     
     transformer_DL.fit(train_np)
     prediction_labels_DL = transformer_DL.predict(test_np) # shape = (n,1)

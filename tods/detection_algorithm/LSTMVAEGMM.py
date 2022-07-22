@@ -7,6 +7,7 @@ import sklearn
 import numpy
 import typing
 import numpy as np
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dense, Dropout , LSTM, Lambda,Input
@@ -192,7 +193,7 @@ class Hyperparams(Hyperparams_ODBase):
     )
 
 
-class LSTMVAEPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Params, Hyperparams]):
+class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Params, Hyperparams]):
     """
     A primitive that uses DeepLog for outlier detection
 
@@ -231,7 +232,7 @@ class LSTMVAEPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Params, 
             loss = keras.losses.mean_squared_error
         else:
             raise ValueError('VAE only suports mean squered error for now')
-        self._clf = LstmVAE(hidden_size=hyperparams['hidden_size'],
+        self._clf = LstmVAEGMM(hidden_size=hyperparams['hidden_size'],
                             encoder_neurons=hyperparams['encoder_neurons'],
                             decoder_neurons=hyperparams['decoder_neurons'],
                             latent_dim=hyperparams['latent_dim'],
@@ -309,7 +310,7 @@ class LSTMVAEPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Params, 
         super().set_params(params=params)
 
 
-class LstmVAE(BaseDetector):
+class LstmVAEGMM(BaseDetector):
     """Class to Implement Deep Log LSTM based on "https://www.cs.utah.edu/~lifeifei/papers/deeplog.pdf
        Only Parameter Value anomaly detection layer has been implemented for time series data"""
 
@@ -321,7 +322,7 @@ class LstmVAE(BaseDetector):
                  output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0,
                  window_size: int = 1, stacked_layers: int  = 1, verbose : int = 1, contamination:int = 0.001):
 
-        super(LstmVAE, self).__init__(contamination=contamination)
+        super(LstmVAEGMM, self).__init__(contamination=contamination)
         
         self.hidden_size = hidden_size
         self.loss = loss
@@ -364,8 +365,9 @@ class LstmVAE(BaseDetector):
 
         z_mean, z_log = args
         batch = K.shape(z_mean)[0]  # batch size
-        dim = K.int_shape(z_mean)[1]  # latent dimension
-        epsilon = K.random_normal(shape=(batch, dim))  # mean=0, std=1.0
+        timesteps = K.shape(z_mean)[1] # timestemps
+        dim = K.int_shape(z_mean)[2]  # latent dimension
+        epsilon = K.random_normal(shape=(batch, timesteps, dim))  # mean=0, std=1.0
 
         return z_mean + K.exp(0.5 * z_log) * epsilon
 
@@ -375,15 +377,15 @@ class LstmVAE(BaseDetector):
         gamma > 1 and capacity != 0 for beta-VAE
         """
 
-        reconstruction_loss = self.loss(inputs, outputs)
+        reconstruction_loss = self.loss(inputs, outputs)  # y_true [batch_size, d0, .. dN]. loss -> [batch_size, d0, .. dN-1]
         reconstruction_loss *= self.n_features_
         kl_loss = 1 + z_log - K.square(z_mean) - K.exp(z_log)
         kl_loss = -0.5 * K.sum(kl_loss, axis=-1)
         kl_loss = self.gamma * K.abs(kl_loss - self.capacity)
+        
+        return K.mean(reconstruction_loss + kl_loss) 
 
-        return K.mean(reconstruction_loss + kl_loss)
-
-
+  
 
     def _build_model(self):
         """
@@ -398,8 +400,8 @@ class LstmVAE(BaseDetector):
         
         inputs = Input(shape=(None, self.n_features_,), name="inputs")
 
-        
-        layer = LSTM(self.hidden_size,return_sequences=False,dropout = self.dropout_rate)(inputs)
+        # return_sequences=True ！！！！
+        layer = LSTM(self.hidden_size,return_sequences=True,dropout = self.dropout_rate)(inputs)
         
          # Hidden layers
         for neurons in self.encoder_neurons:
@@ -441,7 +443,7 @@ class LstmVAE(BaseDetector):
         # Instantiate VAE
         vae = Model(inputs, outputs)
         
-        vae.add_loss(self.vae_loss(inputs[:,-1,:], outputs, z_mean, z_log))
+        vae.add_loss(self.vae_loss(inputs, outputs, z_mean, z_log))
         vae.compile(optimizer=self.optimizer)
         if self.verbose >= 1:
             vae.summary()
@@ -477,7 +479,7 @@ class LstmVAE(BaseDetector):
                                         validation_split=self.validation_size,
                                         verbose=self.verbose).history
         pred_scores = np.zeros(X.shape)
-        pred_scores[self.window_size-1:] = self.model_.predict(X_train)
+        pred_scores[self.window_size-1:] = self.model_.predict(X_train)[:,-1,:] # 输出的shape 为(n,timestemps,features) 但是要用(n,features)
 
         Y_train_for_decision_scores = np.zeros(X.shape)
         Y_train_for_decision_scores[self.window_size-1:] = Y_train
@@ -506,8 +508,8 @@ class LstmVAE(BaseDetector):
         X_data = []
         Y_data = []
         for index in range(X.shape[0] - self.window_size + 1):
-            X_data.append(X_norm[index:index + self.window_size])
-            Y_data.append(X_norm[index + self.window_size - 1])
+            X_data.append(X_norm[index:index+self.window_size])
+            Y_data.append(X_norm[index+self.window_size - 1])
         X_data = np.asarray(X_data)
         Y_data = np.asarray(Y_data)
 
@@ -537,7 +539,7 @@ class LstmVAE(BaseDetector):
         #print(X[0])
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
         pred_scores = np.zeros(X.shape)
-        pred_scores[self.window_size-1:] = self.model_.predict(X_norm)
+        pred_scores[self.window_size-1:] = self.model_.predict(X_norm)[:,-1,:]
         Y_norm_for_decision_scores = np.zeros(X.shape)
         Y_norm_for_decision_scores[self.window_size-1:] = Y_norm
         return pairwise_distances_no_broadcast(Y_norm_for_decision_scores, pred_scores)

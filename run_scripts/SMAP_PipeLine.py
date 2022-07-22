@@ -10,8 +10,9 @@ from tods.sk_interface.detection_algorithm.AutoEncoder_skinterface import AutoEn
 from tods.sk_interface.detection_algorithm.LSTMAE_skinterface import LSTMAESKI
 from tods.sk_interface.detection_algorithm.DAGMM_skinterface import DAGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAE_skinterface import LSTMVAESKI
+from tods.sk_interface.detection_algorithm.OCSVM_skinterface import OCSVMSKI
 from tods.sk_interface.detection_algorithm.VariationalAutoEncoder_skinterface import VariationalAutoEncoderSKI
-
+from tods.sk_interface.detection_algorithm.LSTMVAEGMM_skinterface import LSTMVAEGMMSKI
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
@@ -238,11 +239,49 @@ lstmvae_args = {
     "sub_dataset":"null"
 }
 
-args = lstmvae_args
+ocsvm_args = {
+    "model":"OCSVM",
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs": 6,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
 
 
+lstmvaegmm_args = {
+    "model":"LSTMVAEGMM",
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":32,
+    "hidden_size":64,
+    "encoder_neurons":[64,32,16],
+    "decoder_neurons":[16,32,64],
+    "latent_dim":2,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs": 6,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
 
-
+args = lstmvaegmm_args
 
 
 def prepare_data(args):
@@ -255,7 +294,6 @@ def prepare_data(args):
     train_data=pickle.load(open(train_data_path,'rb'))
     test_data=pickle.load(open(test_data_path,'rb'))
     test_label=pickle.load(open(test_label_path,'rb'))
-    
     
     
     # convert to dataframe
@@ -283,7 +321,7 @@ def prepare_data(args):
     train_np = scaler.fit_transform(train_df)
     test_np = scaler.transform(test_df)
     
-    return train_np , test_np, test_with_label_df 
+    return train_np, test_np, test_with_label_df 
 
 
 def train(args):
@@ -350,7 +388,23 @@ def train(args):
     #     epoch_size = args["epoch_size"],
     # )
     
-    transformer_DL = LSTMVAESKI(
+    # transformer_DL = LSTMVAESKI(
+    #     window_size=args['window_size'],
+    #     hidden_size = args['hidden_size'],
+    #     preprocessing = args["preprocessing"],
+    #     batch_size = args["batch_size"],
+    #     epochs = args["epochs"],
+    #     latent_dim = args["latent_dim"],
+    #     encoder_neurons = args["encoder_neurons"],
+    #     decoder_neurons = args["decoder_neurons"],
+    # )
+    
+    
+    
+    # transformer_DL = OCSVMSKI()
+    
+    
+    transformer_DL = LSTMVAEGMMSKI(
         window_size=args['window_size'],
         hidden_size = args['hidden_size'],
         preprocessing = args["preprocessing"],
@@ -358,14 +412,12 @@ def train(args):
         epochs = args["epochs"],
         latent_dim = args["latent_dim"],
         encoder_neurons = args["encoder_neurons"],
-        decoder_neurons = args["decoder_neurons"],
+        decoder_neurons = args["decoder_neurons"]
     )
     
-    
-    
     transformer_DL.fit(train_np)
-    prediction_labels_DL = transformer_DL.predict(test_np) # shape = (n,1)
-    prediction_score_DL = transformer_DL.predict_score(test_np) # shape = (n,1)
+    prediction_labels_DL = transformer_DL.predict(test_np)       # shape = (n,1)
+    prediction_score_DL = transformer_DL.predict_score(test_np)  # shape = (n,1)
     
     y_true = test_with_label_df[args['anomal_col']]
     y_pred = pd.Series(prediction_labels_DL.flatten())
