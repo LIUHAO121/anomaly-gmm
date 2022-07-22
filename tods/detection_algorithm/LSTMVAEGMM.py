@@ -368,10 +368,12 @@ class LstmVAEGMM(BaseDetector):
         timesteps = K.shape(z_mean)[1] # timestemps
         dim = K.int_shape(z_mean)[2]  # latent dimension
         epsilon = K.random_normal(shape=(batch, timesteps, dim))  # mean=0, std=1.0
+        
+  
 
         return z_mean + K.exp(0.5 * z_log) * epsilon
 
-    def vae_loss(self, inputs, outputs, z_mean, z_log):
+    def vae_loss(self, inputs, outputs, z_mean, z_log,energy_out):
         """ Loss = Recreation loss + Kullback-Leibler loss
         for probability function divergence (ELBO).
         gamma > 1 and capacity != 0 for beta-VAE
@@ -383,8 +385,69 @@ class LstmVAEGMM(BaseDetector):
         kl_loss = -0.5 * K.sum(kl_loss, axis=-1)
         kl_loss = self.gamma * K.abs(kl_loss - self.capacity)
         
-        return K.mean(reconstruction_loss + kl_loss) 
+        return K.mean(reconstruction_loss + kl_loss) + K.mean(energy_out)
 
+
+    
+    def sample_energy(self,gamma_i,z_i, mu_i, sigma_i):
+        
+        """
+        gamma_i,:(timesteps,k)
+        z_i:  (timesteps,l)
+        mu_i:  (k,l)
+        sigma_i: (k,l,l)
+        
+        """
+        z_i = z_i[-1]
+        gamma_i = gamma_i[-1]
+        e=tf.convert_to_tensor(0)
+        cov_eps = tf.eye(mu_i.shape[1]) * (1e-12)
+        n_gmm = mu_i.shape[0]
+        zi = zi[None,:]
+        for k,gamma_i_k in enumerate(gamma_i):
+            mu_i_k = mu_i[k][:, None]  # (l,1)
+            d_k = zi - miu_k   # (l,1)
+            inv_cov = tf.raw_ops.MatrixInverse(input=sigma_i[k] + cov_eps)
+            matmul_3 = tf.matmul(tf.matmul(tf.transpose(d_k,[1,0]),inv_cov),d_k)
+            e_k = tf.math.exp(-0.5 * matmul_3)
+            
+            e_k = e_k / tf.sqrt(tf.math.abs((tf.linalg.det(2 * 3.1415 * sigma_i[k]))))
+            e_k = e_k * gamma_i_k
+            e += tf.squeeze(e_k)           
+        return -tf.log(e)
+            
+    @tf.function
+    def energy(self, gamma, z):
+        """
+        calculate energy for every sample in z
+        gamma: (batch,timesteps,k)
+        z: (batch,timesteps,l)
+        
+        i   : index of samples
+        k   : index of components
+        t   : index of time
+        l,m : index of features
+        
+        return n_samples
+        """
+        gamma_sum = tf.reduce_sum(gamma, axis=1) # (i,k)
+        mu = tf.einsum('itk,itl->ikl',gamma,z) / gamma_sum[:,:,None]  # (i,k,l) 每个sample之间的mu和sigma都是独立的
+        z_centered = tf.sqrt(gamma[:,:,:,None]) * (z[:,:,None,:] - mu[:,None, :, :]) # (i,t,k,l)
+        sigma = tf.einsum('itkl,itkm->iklm',z_centered,z_centered) / gamma_sum[:,:,None,None] # (i,k,l,m) 
+        
+        z_centered = z[:,:,None,:] - mu[:,None, :, :] # (i,t,k,l) -> (i,k,1,l) or (i,k,l,1)
+        z_centered_last = z_centered[:,-1,:,:]
+        z_c_left = z_centered_last[:,:,None,:]
+        z_c_right = z_centered_last[:,:,:,None]
+        inverse_sigma = tf.linalg.inv(sigma)  # (i,k,l,m)
+        matrix_matmul = tf.squeeze(tf.matmul(tf.matmul(z_c_left,inverse_sigma),z_c_right)) # (i,k)
+        
+        e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
+        det_i_k = tf.sqrt(tf.math.abs((tf.linalg.det(2 * 3.1415 * sigma)))) # (i,k)
+        
+        e = tf.reduce_sum((e_i_k / det_i_k) * gamma[:,-1,:],axis=-1)
+        
+        return -tf.math.log(e)
   
 
     def _build_model(self):
@@ -419,18 +482,16 @@ class LstmVAEGMM(BaseDetector):
         if self.verbose >= 1:
             encoder.summary()
 
-        latent_inputs = Input(shape=(self.latent_dim,))
+        latent_inputs = Input(shape=(None,self.latent_dim,))
         
-        layer = Dense(self.latent_dim, activation=self.hidden_activation)(
-            latent_inputs)
+        layer = Dense(self.latent_dim, activation=self.hidden_activation)(latent_inputs)
         
         for neurons in self.decoder_neurons:
             layer = Dense(neurons, activation=self.hidden_activation)(layer)
             layer = Dropout(self.dropout_rate)(layer)
             
         # Output layer
-        outputs = Dense(self.n_features_, activation=self.output_activation)(
-            layer)
+        outputs = Dense(self.n_features_, activation=self.output_activation)(layer)
         
         # Instatiate decoder
         decoder = Model(latent_inputs, outputs)
@@ -439,15 +500,43 @@ class LstmVAEGMM(BaseDetector):
         
          # Generate outputs
         outputs = decoder(encoder(inputs)[2])
-
-        # Instantiate VAE
-        vae = Model(inputs, outputs)
         
-        vae.add_loss(self.vae_loss(inputs, outputs, z_mean, z_log))
-        vae.compile(optimizer=self.optimizer)
+        
+        # estimate model
+        est_input = Input(shape=(None, self.n_features_,), name="est_input")
+        est_outputs = Dense(self.n_features_, activation=self.output_activation)(est_input)
+        est_outputs = Dense(4)(est_outputs) # (i,t,k)
+        est_outputs = tf.nn.softmax(est_outputs)
+        
+        est_model = Model(est_input,est_outputs) 
         if self.verbose >= 1:
-            vae.summary()
-        return vae
+            est_model.summary()
+            
+        est_outputs = est_model(decoder(encoder(inputs)[2])) # gamma
+        
+        # energy calculate
+        energy_input1 = Input(shape=(None, 4,), name="energy_input1")
+        energy_input2 = Input(shape=(None, self.n_features_,), name="energy_input2")
+        
+        energy_out = self.energy(energy_input1,energy_input2)
+        
+        energy_model = Model([energy_input1,energy_input2],energy_out)
+        if self.verbose >= 1:
+            energy_model.summary()
+        
+        energy_out = energy_model([est_model(decoder(encoder(inputs)[2])), decoder(encoder(inputs)[2])])
+        
+
+        # lstm vae gmm
+        lstmvaegmm = Model(inputs, energy_out)
+        
+        
+        
+        lstmvaegmm.add_loss(self.vae_loss(inputs, outputs, z_mean, z_log, energy_out))
+        lstmvaegmm.compile(optimizer=self.optimizer)
+        if self.verbose >= 1:
+            lstmvaegmm.summary()
+        return lstmvaegmm
 
     def fit(self, X, y=None):
         """
@@ -514,6 +603,8 @@ class LstmVAEGMM(BaseDetector):
         Y_data = np.asarray(Y_data)
 
         return X_data,Y_data
+
+
 
 
 

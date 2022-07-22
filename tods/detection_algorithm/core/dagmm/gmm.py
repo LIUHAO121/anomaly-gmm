@@ -112,9 +112,11 @@ class GMM:
             # l,m : index of features
             # Instead of inverse covariance matrix, exploit cholesky decomposition
             # for stability of calculation.
-            z_centered = z[:,None,:] - self.mu[None,:,:]  #  (i k l)
+            z_centered = z[:,None,:] - self.mu[None,:,:]  #  (i k l)   
             
             # matrix[..., :, :] * output[..., :, :] = rhs[..., :, :]
+            
+            # (i,k,l,l),  (i,k,l,t)   (i,k,l,t)
             v = tf.matrix_triangular_solve(self.L, tf.transpose(z_centered, [1, 2, 0]))  
 
             # log(det(Sigma)) = 2 * sum[log(diag(L))]
