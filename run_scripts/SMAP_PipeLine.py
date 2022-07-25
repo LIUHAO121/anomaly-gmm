@@ -259,6 +259,7 @@ ocsvm_args = {
 
 lstmvaegmm_args = {
     "model":"LSTMVAEGMM",
+    "num_gmm":4,
     "preprocessing":False,
     "window_size":100, 
     "batch_size":64,
@@ -405,6 +406,7 @@ def train(args):
     
     
     transformer_DL = LSTMVAEGMMSKI(
+        num_gmm = args["num_gmm"],
         window_size=args['window_size'],
         hidden_size = args['hidden_size'],
         preprocessing = args["preprocessing"],

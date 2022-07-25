@@ -164,6 +164,14 @@ class Hyperparams(Hyperparams_ODBase):
         semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description="verbose"
     )
+    
+    num_gmm = hyperparams.Hyperparameter[int](
+        default=4,
+        semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        description="the number of gmm"
+    )
+    
+    
     hidden_activation = hyperparams.Enumeration[str](
         values=['relu', 'sigmoid', 'softmax', 'softplus', 'softsign',
                 'tanh', 'selu', 'elu', 'exponential'],
@@ -237,6 +245,7 @@ class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Param
                             decoder_neurons=hyperparams['decoder_neurons'],
                             latent_dim=hyperparams['latent_dim'],
                             loss=loss,
+                            num_gmm=hyperparams['num_gmm'],
                             optimizer=hyperparams['optimizer'],
                             epochs=hyperparams['epochs'],
                             batch_size=hyperparams['batch_size'],
@@ -319,7 +328,7 @@ class LstmVAEGMM(BaseDetector):
                  epochs : int =100, batch_size : int =32, dropout_rate : float =0.0,
                  l2_regularizer : float =0.1, validation_size : float =0.1, encoder_neurons=None, decoder_neurons=None,
                  latent_dim=2, hidden_activation='relu',
-                 output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0,
+                 output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0, num_gmm:int=4,
                  window_size: int = 1, stacked_layers: int  = 1, verbose : int = 1, contamination:int = 0.001):
 
         super(LstmVAEGMM, self).__init__(contamination=contamination)
@@ -345,6 +354,7 @@ class LstmVAEGMM(BaseDetector):
         self.latent_dim = latent_dim
         self.gamma = gamma
         self.capacity = capacity
+        self.num_gmm = num_gmm
         
 
     def sampling(self, args):
@@ -368,8 +378,6 @@ class LstmVAEGMM(BaseDetector):
         timesteps = K.shape(z_mean)[1] # timestemps
         dim = K.int_shape(z_mean)[2]  # latent dimension
         epsilon = K.random_normal(shape=(batch, timesteps, dim))  # mean=0, std=1.0
-        
-  
 
         return z_mean + K.exp(0.5 * z_log) * epsilon
 
@@ -387,34 +395,6 @@ class LstmVAEGMM(BaseDetector):
         
         return K.mean(reconstruction_loss + kl_loss) + 0.1 * K.mean(energy_out)
 
-
-    
-    def sample_energy(self,gamma_i,z_i, mu_i, sigma_i):
-        
-        """
-        gamma_i,:(timesteps,k)
-        z_i:  (timesteps,l)
-        mu_i:  (k,l)
-        sigma_i: (k,l,l)
-        
-        """
-        z_i = z_i[-1]
-        gamma_i = gamma_i[-1]
-        e=tf.convert_to_tensor(0)
-        cov_eps = tf.eye(mu_i.shape[1]) * (1e-12)
-        n_gmm = mu_i.shape[0]
-        zi = zi[None,:]
-        for k,gamma_i_k in enumerate(gamma_i):
-            mu_i_k = mu_i[k][:, None]  # (l,1)
-            d_k = zi - miu_k   # (l,1)
-            inv_cov = tf.raw_ops.MatrixInverse(input=sigma_i[k] + cov_eps)
-            matmul_3 = tf.matmul(tf.matmul(tf.transpose(d_k,[1,0]),inv_cov),d_k)
-            e_k = tf.math.exp(-0.5 * matmul_3)
-            
-            e_k = e_k / tf.sqrt(tf.math.abs((tf.linalg.det(2 * 3.1415 * sigma_i[k]))))
-            e_k = e_k * gamma_i_k
-            e += tf.squeeze(e_k)           
-        return -tf.log(e)
             
 
     def energy(self, gamma, z):
@@ -510,7 +490,7 @@ class LstmVAEGMM(BaseDetector):
         est_outputs = Dense(self.n_features_, activation=self.output_activation)(est_input)
         est_outputs = Dense(16, activation=self.output_activation)(est_input)
         est_outputs = Dense(8, activation=self.output_activation)(est_input)
-        est_outputs = Dense(4)(est_outputs) # (i,t,k)
+        est_outputs = Dense(self.num_gmm)(est_outputs) # (i,t,k)
         est_outputs = tf.nn.softmax(est_outputs)
         
         est_model = Model(est_input,est_outputs) 
@@ -520,7 +500,7 @@ class LstmVAEGMM(BaseDetector):
         est_outputs = est_model(decoder(encoder(inputs)[2]) - inputs) # gamma
         
         # energy calculate
-        energy_input1 = Input(shape=(None, 4,), name="energy_input1")
+        energy_input1 = Input(shape=(None, self.num_gmm,), name="energy_input1")
         energy_input2 = Input(shape=(None, self.n_features_,), name="energy_input2")
         
         energy_out = self.energy(energy_input1,energy_input2)

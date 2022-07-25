@@ -72,7 +72,7 @@ def multi_threshold_eval(args,pred_score,label):
         res['thresholds'].append(round(threshold,4))
         res['precision'].append(round(precision,4))
         res['recall'].append(round(recall,4))
-        res['f1'].append(round(f1,4))
+        res['f1'].append(round(f1, 4))
     res = pd.DataFrame(res)
     print(res)
     res.to_csv(os.path.join(args['metrics_dir'],"{}_{}_{}.csv".format(args['dataset_name'], args['model'], args['sub_dataset'])))

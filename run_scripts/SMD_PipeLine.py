@@ -11,6 +11,7 @@ from tods.sk_interface.detection_algorithm.LSTMAE_skinterface import LSTMAESKI
 from tods.sk_interface.detection_algorithm.VariationalAutoEncoder_skinterface import VariationalAutoEncoderSKI
 from tods.sk_interface.detection_algorithm.DAGMM_skinterface import DAGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAE_skinterface import LSTMVAESKI
+from tods.sk_interface.detection_algorithm.LSTMVAEGMM_skinterface import LSTMVAEGMMSKI
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
@@ -246,7 +247,32 @@ lstmvae_args = {
     "sub_dataset":"null"
 }
 
-args = deeplog_args
+lstmvaegmm_args = {
+    "model":"LSTMVAEGMM",
+    "num_gmm":4,
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":64,
+    "hidden_size":64,
+    "encoder_neurons":[64,32,16],
+    "decoder_neurons":[16,32,64],
+    "latent_dim":2,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs": 2,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+args = lstmvaegmm_args
 
 
 
@@ -257,9 +283,9 @@ def prepare_data(args,machine_name):
     test_data_path = os.path.join(dataset_dir,machine_name + test_suffix) 
     test_label_path = os.path.join(dataset_dir,machine_name + test_label_suffix) 
     # read
-    train_data=pickle.load(open(train_data_path,'rb'))
-    test_data=pickle.load(open(test_data_path,'rb'))
-    test_label=pickle.load(open(test_label_path,'rb'))
+    train_data = pickle.load(open(train_data_path,'rb'))
+    test_data = pickle.load(open(test_data_path,'rb'))
+    test_label = pickle.load(open(test_label_path,'rb'))
     
     
     # convert to dataframe
@@ -296,14 +322,14 @@ def train(args,machine_name):
     test_anomal_num = int(np.sum(test_with_label_df[args['anomal_col']]))
     test_data_num = int(test_np.shape[0])
     
-    transformer_DL = DeepLogSKI(
-                        window_size=args['window_size'],
-                        stacked_layers=args['stacked_layers'],
-                        contamination=args['contamination'],
-                        epochs=args['epochs'],
-                        batch_size = args['batch_size'],
-                        hidden_size=args['hidden_size']
-                                )
+    # transformer_DL = DeepLogSKI(
+    #                     window_size=args['window_size'],
+    #                     stacked_layers=args['stacked_layers'],
+    #                     contamination=args['contamination'],
+    #                     epochs=args['epochs'],
+    #                     batch_size = args['batch_size'],
+    #                     hidden_size=args['hidden_size']
+    #                             )
     
     # transformer_DL = LSTMODetectorSKI(
     #     min_attack_time = args['min_attack_time'],
@@ -364,6 +390,19 @@ def train(args,machine_name):
     #     encoder_neurons = args["encoder_neurons"],
     #     decoder_neurons = args["decoder_neurons"],
     # )
+    
+    
+    transformer_DL = LSTMVAEGMMSKI(
+        num_gmm = args["num_gmm"],
+        window_size=args['window_size'],
+        hidden_size = args['hidden_size'],
+        preprocessing = args["preprocessing"],
+        batch_size = args["batch_size"],
+        epochs = args["epochs"],
+        latent_dim = args["latent_dim"],
+        encoder_neurons = args["encoder_neurons"],
+        decoder_neurons = args["decoder_neurons"]
+    )
     
     transformer_DL.fit(train_np)
     prediction_labels_DL = transformer_DL.predict(test_np) # shape = (n,1)
