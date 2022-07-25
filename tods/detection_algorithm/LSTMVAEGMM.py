@@ -385,7 +385,7 @@ class LstmVAEGMM(BaseDetector):
         kl_loss = -0.5 * K.sum(kl_loss, axis=-1)
         kl_loss = self.gamma * K.abs(kl_loss - self.capacity)
         
-        return K.mean(reconstruction_loss + kl_loss) + K.mean(energy_out)
+        return K.mean(reconstruction_loss + kl_loss) + 0.1 * K.mean(energy_out)
 
 
     
@@ -416,7 +416,7 @@ class LstmVAEGMM(BaseDetector):
             e += tf.squeeze(e_k)           
         return -tf.log(e)
             
-    @tf.function
+
     def energy(self, gamma, z):
         """
         calculate energy for every sample in z
@@ -439,14 +439,17 @@ class LstmVAEGMM(BaseDetector):
         z_centered_last = z_centered[:,-1,:,:]
         z_c_left = z_centered_last[:,:,None,:]
         z_c_right = z_centered_last[:,:,:,None]
-        inverse_sigma = tf.linalg.inv(sigma)  # (i,k,l,m)
-        matrix_matmul = tf.squeeze(tf.matmul(tf.matmul(z_c_left,inverse_sigma),z_c_right)) # (i,k)
         
+        # inverse_sigma = tf.linalg.inv(sigma)  # (i,k,l,m)
+        # matrix_matmul = tf.squeeze(tf.matmul(tf.matmul(z_c_left,inverse_sigma),z_c_right)) # (i,k)
+        # e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
+        # det_i_k = tf.sqrt(tf.math.abs((tf.linalg.det(2 * 3.1415 * sigma)))) # (i,k)
+        # e = tf.reduce_sum((e_i_k / det_i_k) * gamma[:,-1,:],axis=-1)
+        
+        matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right))
         e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
-        det_i_k = tf.sqrt(tf.math.abs((tf.linalg.det(2 * 3.1415 * sigma)))) # (i,k)
-        
-        e = tf.reduce_sum((e_i_k / det_i_k) * gamma[:,-1,:],axis=-1)
-        
+        e = tf.reduce_sum((e_i_k) * gamma[:,-1,:],axis=-1)
+        e=tf.reshape(e,[-1,1])
         return -tf.math.log(e)
   
 
@@ -505,6 +508,8 @@ class LstmVAEGMM(BaseDetector):
         # estimate model
         est_input = Input(shape=(None, self.n_features_,), name="est_input")
         est_outputs = Dense(self.n_features_, activation=self.output_activation)(est_input)
+        est_outputs = Dense(16, activation=self.output_activation)(est_input)
+        est_outputs = Dense(8, activation=self.output_activation)(est_input)
         est_outputs = Dense(4)(est_outputs) # (i,t,k)
         est_outputs = tf.nn.softmax(est_outputs)
         
@@ -512,7 +517,7 @@ class LstmVAEGMM(BaseDetector):
         if self.verbose >= 1:
             est_model.summary()
             
-        est_outputs = est_model(decoder(encoder(inputs)[2])) # gamma
+        est_outputs = est_model(decoder(encoder(inputs)[2]) - inputs) # gamma
         
         # energy calculate
         energy_input1 = Input(shape=(None, 4,), name="energy_input1")
@@ -553,7 +558,6 @@ class LstmVAEGMM(BaseDetector):
         self._set_n_classes(y)
         self.n_samples_, self.n_features_ = X.shape[0], X.shape[1]
 
-
         X_train,Y_train = self._preprocess_data_for_LSTM(X)
 
         data = {
@@ -567,14 +571,10 @@ class LstmVAEGMM(BaseDetector):
                                         batch_size=self.batch_size,
                                         validation_split=self.validation_size,
                                         verbose=self.verbose).history
-        pred_scores = np.zeros(X.shape)
-        pred_scores[self.window_size-1:] = self.model_.predict(X_train)[:,-1,:] # 输出的shape 为(n,timestemps,features) 但是要用(n,features)
+        pred_scores = np.zeros([X.shape[0],1])
+        pred_scores[self.window_size-1:] = self.model_.predict(X_train)# 输出的shape 为(n,timestemps,features) 但是要用(n,features)
 
-        Y_train_for_decision_scores = np.zeros(X.shape)
-        Y_train_for_decision_scores[self.window_size-1:] = Y_train
-        self.decision_scores_ = pairwise_distances_no_broadcast(Y_train_for_decision_scores,
-                                                                pred_scores)
-
+        self.decision_scores_ = pred_scores
         self._process_decision_scores()
         return self
 
@@ -629,8 +629,6 @@ class LstmVAEGMM(BaseDetector):
         #print(X.shape)
         #print(X[0])
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
-        pred_scores = np.zeros(X.shape)
-        pred_scores[self.window_size-1:] = self.model_.predict(X_norm)[:,-1,:]
-        Y_norm_for_decision_scores = np.zeros(X.shape)
-        Y_norm_for_decision_scores[self.window_size-1:] = Y_norm
-        return pairwise_distances_no_broadcast(Y_norm_for_decision_scores, pred_scores)
+        pred_scores = np.zeros([X.shape[0],1])
+        pred_scores[self.window_size-1:] = self.model_.predict(X_norm)
+        return pred_scores
