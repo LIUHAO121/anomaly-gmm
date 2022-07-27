@@ -45,9 +45,8 @@ def adjust_predicts(args, pred, label,threshold):
                         break
                     else:
                         if not predict[j]:
-                            if args['dataset_name'] != "SMD":
-                                predict[j] = True
-                                latency += 1
+                            predict[j] = True
+                            latency += 1
         elif not actual[i]:
             anomaly_state = False
         if anomaly_state:
@@ -102,13 +101,14 @@ def merge_smd_metric(metric_dir,model):
         
 def merge_all_metric(metric_dir,models):
     datasets = ['MSL','SMAP','SMD']
-    res = {'precision':[],'recall':[],'f1':[]}
+    res = {'contamination':[],'precision':[],'recall':[],'f1':[]}
     for d in datasets:
-        res = {'models':[],'precision':[],'recall':[],'f1':[]}
+        res = {'models':[],'contamination':[],'precision':[],'recall':[],'f1':[]}
         for m in models:
             metric_file = os.path.join(metric_dir,f"{d}_{m}_null.csv")
             df = pd.read_csv(metric_file)
             best_f1_df = df[df['f1']==df['f1'].max()]
+            res['contamination'].append(best_f1_df['contamination'].to_list()[0])
             res['precision'].append(best_f1_df['precision'].to_list()[0])        
             res['recall'].append(best_f1_df['recall'].to_list()[0])  
             res['f1'].append(best_f1_df['f1'].to_list()[0])   
@@ -122,10 +122,10 @@ def merge_all_metric(metric_dir,models):
 if __name__ == "__main__":
 
     metric_dir = "run_scripts/out/metric"
-    models = ["AE", "VAE", "DAGMM", "lstmod", "LSTMAE", "LSTMVAE", "deeplog", "telemanom"]
+    models = ["AE", "VAE", "DAGMM", "lstmod", "LSTMAE", "LSTMVAE", "deeplog", "telemanom","LSTMVAEGMM"]
     
-    # for m in models:
-        # merge_smd_metric(metric_dir=metric_dir,model=m)
+    for m in models:
+        merge_smd_metric(metric_dir=metric_dir,model=m)
     
     
     merge_all_metric(metric_dir=metric_dir,models=models)

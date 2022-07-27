@@ -220,7 +220,7 @@ class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Param
             'contact': 'mailto:khlai037@tamu.edu',
         },
         'hyperparams_to_tune': ['hidden_size','hidden_activation', 'loss', 'optimizer', 'epochs', 'batch_size',
-                                'l2_regularizer', 'validation_size', 
+                                'l2_regularizer', 'validation_size', 'num_gmm',
                                 'window_size', 'features', 'stacked_layers', 'preprocessing', 'verbose', 'dropout_rate','contamination'],
         'version': '0.0.1', 
         'algorithm_types': [
@@ -261,6 +261,7 @@ class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Param
                             gamma=hyperparams['gamma'],
                             capacity=hyperparams['capacity']
                                 )
+        
 
     def set_training_data(self, *, inputs: Inputs) -> None:
         """
@@ -357,6 +358,7 @@ class LstmVAEGMM(BaseDetector):
         self.num_gmm = num_gmm
         
 
+
     def sampling(self, args):
         """Reparametrisation by sampling from Gaussian, N(0,I)
         To sample from epsilon = Norm(0,I) instead of from likelihood Q(z|X)
@@ -395,9 +397,8 @@ class LstmVAEGMM(BaseDetector):
         
         return K.mean(reconstruction_loss + kl_loss) + 0.1 * K.mean(energy_out)
 
-            
 
-    def energy(self, gamma, z):
+    def energy(self, gamma_and_z):
         """
         calculate energy for every sample in z
         gamma: (batch,timesteps,k)
@@ -410,10 +411,11 @@ class LstmVAEGMM(BaseDetector):
         
         return n_samples
         """
+        gamma,z = gamma_and_z
         gamma_sum = tf.reduce_sum(gamma, axis=1) # (i,k)
         mu = tf.einsum('itk,itl->ikl',gamma,z) / gamma_sum[:,:,None]  # (i,k,l) 每个sample之间的mu和sigma都是独立的
         z_centered = tf.sqrt(gamma[:,:,:,None]) * (z[:,:,None,:] - mu[:,None, :, :]) # (i,t,k,l)
-        sigma = tf.einsum('itkl,itkm->iklm',z_centered,z_centered) / gamma_sum[:,:,None,None] # (i,k,l,m) 
+        # sigma = tf.einsum('itkl,itkm->iklm',z_centered,z_centered) / gamma_sum[:,:,None,None] # (i,k,l,m) 
         
         z_centered = z[:,:,None,:] - mu[:,None, :, :] # (i,t,k,l) -> (i,k,1,l) or (i,k,l,1)
         z_centered_last = z_centered[:,-1,:,:]
@@ -490,7 +492,7 @@ class LstmVAEGMM(BaseDetector):
         est_outputs = Dense(self.n_features_, activation=self.output_activation)(est_input)
         est_outputs = Dense(16, activation=self.output_activation)(est_input)
         est_outputs = Dense(8, activation=self.output_activation)(est_input)
-        est_outputs = Dense(self.num_gmm)(est_outputs) # (i,t,k)
+        est_outputs = Dense(self.num_gmm)(est_outputs) # (i,t,k）
         est_outputs = tf.nn.softmax(est_outputs)
         
         est_model = Model(est_input,est_outputs) 
@@ -503,7 +505,7 @@ class LstmVAEGMM(BaseDetector):
         energy_input1 = Input(shape=(None, self.num_gmm,), name="energy_input1")
         energy_input2 = Input(shape=(None, self.n_features_,), name="energy_input2")
         
-        energy_out = self.energy(energy_input1,energy_input2)
+        energy_out = Lambda(self.energy)([energy_input1,energy_input2])
         
         energy_model = Model([energy_input1,energy_input2],energy_out)
         if self.verbose >= 1:
@@ -544,7 +546,7 @@ class LstmVAEGMM(BaseDetector):
             "inputs":X_train,
             # "targets":Y_train,
         }
-
+        
         self.model_ = self._build_model()
         self.history_ = self.model_.fit(data,
                                         epochs=self.epochs,
@@ -585,9 +587,6 @@ class LstmVAEGMM(BaseDetector):
         return X_data,Y_data
 
 
-
-
-
     def decision_function(self, X):
         """Predict raw anomaly score of X using the fitted detector.
         The anomaly score of an input sample is computed based on different
@@ -602,7 +601,7 @@ class LstmVAEGMM(BaseDetector):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
-        check_is_fitted(self, ['model_', 'history_'])
+        # check_is_fitted(self, ['model_', 'history_'])
 
         X = check_array(X)
         #print("inside")
@@ -611,4 +610,29 @@ class LstmVAEGMM(BaseDetector):
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
         pred_scores = np.zeros([X.shape[0],1])
         pred_scores[self.window_size-1:] = self.model_.predict(X_norm)
+        return pred_scores
+    
+    def load_decision_function(self, model_path, X):
+        """Predict raw anomaly score of X using the fitted detector.
+        The anomaly score of an input sample is computed based on different
+        detector algorithms. .
+        Parameters
+        ----------
+        X : numpy array of shape (n_samples, n_features)
+            The training input samples. Sparse matrices are accepted only
+            if they are supported by the base estimator.
+        Returns
+        -------
+        anomaly_scores : numpy array of shape (n_samples,)
+            The anomaly score of the input samples.
+        """
+        # check_is_fitted(self, ['model_', 'history_'])
+        loaded_model = tf.keras.models.load_model(model_path,custom_objects={'energy': self.energy,'sampling':self.sampling})
+        X = check_array(X)
+        #print("inside")
+        #print(X.shape)
+        #print(X[0])
+        X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
+        pred_scores = np.zeros([X.shape[0],1])
+        pred_scores[self.window_size-1:] = loaded_model.predict(X_norm)
         return pred_scores

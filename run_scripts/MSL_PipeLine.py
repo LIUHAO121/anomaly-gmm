@@ -38,14 +38,19 @@ import pickle
 
 from run_scripts.plot_tools import plot_anomal_multi_columns,plot_anomal_multi_columns_3d,plot_multi_columns,plot_one_column_with_label,plot_predict, plot_after_train,plot_before_train
 from run_scripts.metric_tools import calc_point2point, adjust_predicts,multi_threshold_eval
+from run_scripts.utils import train_step,eval_step
 
 import tensorflow as tf
+from tensorflow import keras
 gpu_devices = tf.config.experimental.list_physical_devices('GPU')
 for device in gpu_devices:
     tf.config.experimental.set_memory_growth(device, True)
     
 dataset_name = "MSL"
 dataset_dim = 55  
+
+
+
 
 
 deeplog_args = {
@@ -94,7 +99,6 @@ lstmod_args = {
     "sub_dataset": "null"
 }
 
-
 telemanom_args = {
     "stacked_layers":1,
     "contamination":0.1, 
@@ -142,7 +146,6 @@ ae_args = {
     "sub_dataset": "null"
 }
 
-
 lstmae_args = {
     "preprocessing":False,
     "hidden_neurons":[16,3,16],
@@ -165,8 +168,7 @@ lstmae_args = {
     "use_important_cols":False,
     "model":"LSTMAE",
     "sub_dataset":"null"
-}
-
+}\
 
 vae_args = {
     "model":"VAE",
@@ -224,6 +226,7 @@ lstmvae_args = {
     "latent_dim":2,
     "epoch_size":32,
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination":0.01,
     "epochs": 1,
     "dataset_dir":f'datasets/{dataset_name}',
     "dataset_name":dataset_name,
@@ -238,7 +241,6 @@ lstmvae_args = {
     "sub_dataset":"null"
 }
 
-
 ocsvm_args = {
     "model":"OCSVM",
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
@@ -248,6 +250,7 @@ ocsvm_args = {
     "dataset_dim":dataset_dim,
     "anomal_col":"anomaly",
     "plot":False,
+    "contamination":0.01,
     "plot_dir": "run_scripts/out/imgs",
     "metrics_dir": "run_scripts/out/metric",
     "important_cols":['1','9','10','12','13','14','15','23'],
@@ -256,9 +259,9 @@ ocsvm_args = {
     "sub_dataset":"null"
 }
 
-
 lstmvaegmm_args = {
     "model":"LSTMVAEGMM",
+    "num_gmm":4,
     "preprocessing":False,
     "window_size":100, 
     "batch_size":64,
@@ -267,6 +270,7 @@ lstmvaegmm_args = {
     "decoder_neurons":[16,32,64],
     "latent_dim":2,
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination":0.01,
     "epochs": 2,
     "dataset_dir":f'datasets/{dataset_name}',
     "dataset_name":dataset_name,
@@ -275,6 +279,7 @@ lstmvaegmm_args = {
     "plot":False,
     "plot_dir": "run_scripts/out/imgs",
     "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
     "important_cols":['1','9','10','12','13','14','15','23'],
     "plot_cols":['9','10','12'],
     "use_important_cols":False,
@@ -282,6 +287,9 @@ lstmvaegmm_args = {
 }
 
 args = lstmvaegmm_args
+
+
+
 
 
 def prepare_data(args):
@@ -294,8 +302,7 @@ def prepare_data(args):
     train_data=pickle.load(open(train_data_path,'rb'))
     test_data=pickle.load(open(test_data_path,'rb'))
     test_label=pickle.load(open(test_label_path,'rb'))
-    
-    
+
     
     # convert to dataframe
     columns = [str(i+1) for i in range(args['dataset_dim'])]
@@ -304,10 +311,15 @@ def prepare_data(args):
     if args['use_important_cols']:
         train_df = train_df.loc[:,args['important_cols']]
         test_df = test_df.loc[:,args['important_cols']]
+
+    # normalize
+    scaler = StandardScaler()
+    train_np = scaler.fit_transform(train_df)
+    test_np = scaler.transform(test_df)
     
     # test_with_label
     columns = [str(i+1) for i in range(args['dataset_dim'])]
-    test_with_label = np.concatenate([test_data, test_label.reshape(-1,1)], axis=1)
+    test_with_label = np.concatenate([test_np, test_label.reshape(-1,1)], axis=1)
     test_with_label_df = pd.DataFrame(test_with_label)
     columns.append(args['anomal_col']) # inplace
     test_with_label_df.columns = columns
@@ -316,11 +328,6 @@ def prepare_data(args):
     # plot 
     if args["plot"]:
         plot_before_train(args, df=test_with_label_df)
-        
-    # normalize
-    scaler = StandardScaler()
-    train_np = scaler.fit_transform(train_df)
-    test_np = scaler.transform(test_df)
     
     return train_np , test_np, test_with_label_df 
 
@@ -328,6 +335,10 @@ def prepare_data(args):
 def train(args):
 
     train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
+    
+    train_np=train_np[2000:3000]
+    test_np=test_np[2000:3000]
+    test_with_label_df=test_with_label_df[2000:3000]
     test_anomal_num = int(np.sum(test_with_label_df[args['anomal_col']]))
     test_data_num = int(test_np.shape[0])
     
@@ -405,6 +416,7 @@ def train(args):
     # transformer_DL = OCSVMSKI()
     
     transformer_DL = LSTMVAEGMMSKI(
+        num_gmm = args["num_gmm"],
         window_size=args['window_size'],
         hidden_size = args['hidden_size'],
         preprocessing = args["preprocessing"],
@@ -415,29 +427,27 @@ def train(args):
         decoder_neurons = args["decoder_neurons"]
     )
     
-    
-    transformer_DL.fit(train_np)
-    prediction_labels_DL = transformer_DL.predict(test_np) # shape = (n,1)
-    prediction_score_DL = transformer_DL.predict_score(test_np) # shape = (n,1)
-    
-    y_true = test_with_label_df[args['anomal_col']]
-    y_pred = pd.Series(prediction_labels_DL.flatten())
-    y_score = pd.Series(prediction_score_DL.flatten())
-    
 
-    # plot_after_train(
-    #             args,
-    #             df=test_with_label_df,
-    #             predict=y_score
-    #                  )
-    
-    
-    
-    multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
-    
-    print("train_np.shape = ",train_np.shape)
-    print("test : anomal/total {}/{}".format(test_anomal_num, test_data_num))
-    
+    model_dir =  os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
+    if not os.path.exists(model_dir):
+        train_step(
+            args,
+            transformer_DL=transformer_DL,
+            train_np=train_np,
+            test_np=test_np,
+            test_with_label_df=test_with_label_df
+                )
+    else:
+        eval_step(
+            args,
+            transformer_DL=transformer_DL,
+            test_np=test_np,
+            test_with_label_df=test_with_label_df
+        )
+
+
 
 if __name__ == "__main__":
     train(args=args)
+    
+

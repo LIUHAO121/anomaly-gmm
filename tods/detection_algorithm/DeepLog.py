@@ -7,6 +7,7 @@ import sklearn
 import numpy
 import typing
 import numpy as np
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout , LSTM
 from tensorflow.keras.regularizers import l2
@@ -404,6 +405,32 @@ class DeeplogLstm(BaseDetector):
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
         pred_scores = np.zeros(X.shape)
         pred_scores[self.window_size:] = self.model_.predict(X_norm)
+        Y_norm_for_decision_scores = np.zeros(X.shape)
+        Y_norm_for_decision_scores[self.window_size:] = Y_norm
+        return pairwise_distances_no_broadcast(Y_norm_for_decision_scores, pred_scores)
+    
+    
+    def load_decision_function(self, model_path, X):
+        """Predict raw anomaly score of X using the fitted detector.
+        The anomaly score of an input sample is computed based on different
+        detector algorithms. .
+        Parameters
+        ----------
+        X : numpy array of shape (n_samples, n_features)
+            The training input samples. Sparse matrices are accepted only
+            if they are supported by the base estimator.
+        Returns
+        -------
+        anomaly_scores : numpy array of shape (n_samples,)
+            The anomaly score of the input samples.
+        """
+        # check_is_fitted(self, ['model_', 'history_'])
+        loaded_model = tf.keras.models.load_model(model_path,custom_objects={'energy': self.energy,'sampling':self.sampling})
+        X = check_array(X)
+  
+        X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
+        pred_scores = np.zeros(X.shape)
+        pred_scores[self.window_size:] = loaded_model.predict(X_norm)
         Y_norm_for_decision_scores = np.zeros(X.shape)
         Y_norm_for_decision_scores[self.window_size:] = Y_norm
         return pairwise_distances_no_broadcast(Y_norm_for_decision_scores, pred_scores)

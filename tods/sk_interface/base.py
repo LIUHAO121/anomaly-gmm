@@ -40,13 +40,12 @@ class BaseSKI:
 
         #print(hyperparams)
 
-    def fit(self, data):
 
+        
+    def fit(self, data):
         if not self.fit_available:
             raise AttributeError('type object ' + self.__class__.__name__ + ' has no attribute \'fit\'')
-
         data = self._sys_data_check(data)
-
         for sys_idx, primitive in enumerate(self.primitives):
             sys_data = data[sys_idx]
             sys_data = self._transform(sys_data)

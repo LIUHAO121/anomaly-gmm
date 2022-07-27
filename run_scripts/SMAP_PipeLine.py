@@ -38,13 +38,13 @@ import pickle
 
 from run_scripts.plot_tools import plot_anomal_multi_columns,plot_anomal_multi_columns_3d,plot_multi_columns,plot_one_column_with_label,plot_predict, plot_after_train,plot_before_train
 from run_scripts.metric_tools import calc_point2point, adjust_predicts,multi_threshold_eval
+from run_scripts.utils import train_step,eval_step
 
 import tensorflow as tf
 gpu_devices = tf.config.experimental.list_physical_devices('GPU')
 for device in gpu_devices:
     tf.config.experimental.set_memory_growth(device, True)
-    
-    
+      
 dataset_name = "SMAP"
 dataset_dim = 25
 
@@ -268,6 +268,7 @@ lstmvaegmm_args = {
     "decoder_neurons":[16,32,64],
     "latent_dim":2,
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination":0.01,
     "epochs": 2,
     "dataset_dir":f'datasets/{dataset_name}',
     "dataset_name":dataset_name,
@@ -276,6 +277,7 @@ lstmvaegmm_args = {
     "plot":False,
     "plot_dir": "run_scripts/out/imgs",
     "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
     "important_cols":['1','9','10','12','13','14','15','23'],
     "plot_cols":['9','10','12'],
     "use_important_cols":False,
@@ -305,9 +307,14 @@ def prepare_data(args):
         train_df = train_df.loc[:,args['important_cols']]
         test_df = test_df.loc[:,args['important_cols']]
     
+    # normalize
+    scaler = StandardScaler()
+    train_np = scaler.fit_transform(train_df)
+    test_np = scaler.transform(test_df)
+    
     # test_with_label
     columns = [str(i+1) for i in range(args['dataset_dim'])]
-    test_with_label = np.concatenate([test_data, test_label.reshape(-1,1)], axis=1)
+    test_with_label = np.concatenate([test_np, test_label.reshape(-1,1)], axis=1)
     test_with_label_df = pd.DataFrame(test_with_label)
     columns.append(args['anomal_col']) # inplace
     test_with_label_df.columns = columns
@@ -316,11 +323,6 @@ def prepare_data(args):
     # plot 
     if args["plot"]:
         plot_before_train(args, df=test_with_label_df)
-        
-    # normalize
-    scaler = StandardScaler()
-    train_np = scaler.fit_transform(train_df)
-    test_np = scaler.transform(test_df)
     
     return train_np, test_np, test_with_label_df 
 
@@ -328,6 +330,9 @@ def prepare_data(args):
 def train(args):
 
     train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
+    train_np=train_np
+    test_np=test_np
+    test_with_label_df=test_with_label_df
     test_anomal_num = int(np.sum(test_with_label_df[args['anomal_col']]))
     test_data_num = int(test_np.shape[0])
     
@@ -417,24 +422,22 @@ def train(args):
         decoder_neurons = args["decoder_neurons"]
     )
     
-    transformer_DL.fit(train_np)
-    prediction_labels_DL = transformer_DL.predict(test_np)       # shape = (n,1)
-    prediction_score_DL = transformer_DL.predict_score(test_np)  # shape = (n,1)
-    
-    y_true = test_with_label_df[args['anomal_col']]
-    y_pred = pd.Series(prediction_labels_DL.flatten())
-    y_score = pd.Series(prediction_score_DL.flatten())
-    
-
-    # plot_after_train(
-    #             args,
-    #             df=test_with_label_df,
-    #             predict=y_score
-    #                  )
-    multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
-    
-    print("train_np.shape = ",train_np.shape)
-    print("test : anomal/total {}/{}".format(test_anomal_num, test_data_num))
+    model_dir =  os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
+    if not os.path.exists(model_dir):
+        train_step(
+            args,
+            transformer_DL=transformer_DL,
+            train_np=train_np,
+            test_np=test_np,
+            test_with_label_df=test_with_label_df
+                )
+    else:
+        eval_step(
+            args,
+            transformer_DL=transformer_DL,
+            test_np=test_np,
+            test_with_label_df=test_with_label_df
+        )
     
 
 if __name__ == "__main__":
