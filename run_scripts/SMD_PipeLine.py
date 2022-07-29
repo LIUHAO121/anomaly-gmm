@@ -12,6 +12,7 @@ from tods.sk_interface.detection_algorithm.VariationalAutoEncoder_skinterface im
 from tods.sk_interface.detection_algorithm.DAGMM_skinterface import DAGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAE_skinterface import LSTMVAESKI
 from tods.sk_interface.detection_algorithm.LSTMVAEGMM_skinterface import LSTMVAEGMMSKI
+from tods.sk_interface.detection_algorithm.LSTMVAEDISTGMM_skinterface import LSTMVAEDISTGMMSKI
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
@@ -49,12 +50,17 @@ for device in gpu_devices:
     
 
     
-machine_names = ["machine-1-1", "machine-1-2","machine-1-3", "machine-1-4",  "machine-1-5","machine-1-6",  "machine-1-7", "machine-1-8", 
-                 "machine-2-1",  "machine-2-2", "machine-2-3",  "machine-2-4","machine-2-5", "machine-2-6", "machine-2-7",    "machine-2-8",  "machine-2-9", 
-                "machine-3-1",  "machine-3-2",  "machine-3-3",  "machine-3-4", "machine-3-5",  "machine-3-6","machine-3-7",  "machine-3-8",   "machine-3-9", "machine-3-10","machine-3-11", ]
+# machine_names = ["machine-1-1", "machine-1-2","machine-1-3", "machine-1-4",  "machine-1-5","machine-1-6",  "machine-1-7", "machine-1-8", 
+#                  "machine-2-1",  "machine-2-2", "machine-2-3",  "machine-2-4","machine-2-5", "machine-2-6", "machine-2-7",    "machine-2-8",  "machine-2-9", 
+#                 "machine-3-1",  "machine-3-2",  "machine-3-3",  "machine-3-4", "machine-3-5",  "machine-3-6","machine-3-7",  "machine-3-8",   "machine-3-9", "machine-3-10","machine-3-11"]
 
 
-# machine_names = ['machine-1-4']
+
+
+machine_names = ["machine-1-2","machine-1-3","machine-1-4",  "machine-1-5", "machine-1-6",  "machine-1-7"]
+
+
+
 
 train_suffix = "_train.pkl"
 test_suffix = "_test.pkl"
@@ -69,7 +75,7 @@ deeplog_args = {
     "stacked_layers":1,
     "contamination":0.1, 
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "epochs":6,
+    "epochs":2,
     "dataset_dir":'datasets/SMD',
     "dataset_name":"SMD",
     "dataset_dim":38,
@@ -265,10 +271,39 @@ lstmvaegmm_args = {
     "num_gmm":4,
     "preprocessing":False,
     "window_size":100, 
+    "batch_size":128,
+    "hidden_size":64,
+    "encoder_neurons":[32,16],
+    "decoder_neurons":[16,32],
+    "latent_dim":16,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination":0.01,
+    "epochs": 2,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
+    "important_cols":['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18'],
+    # "important_cols":['1','3','5','7','9','11','13','15','17','19','21','23','25','27','29','31','33','35'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+
+lstmvaedistgmm_args = {
+    "model":"LSTMVAEDISTGMM",
+    "num_gmm":4,
+    "preprocessing":False,
+    "window_size":100, 
     "batch_size":64,
     "hidden_size":64,
-    "encoder_neurons":[64,32,16],
-    "decoder_neurons":[16,32,64],
+    "encoder_neurons":[32,16],
+    "decoder_neurons":[16,32],
     "latent_dim":2,
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "contamination":0.01,
@@ -281,13 +316,13 @@ lstmvaegmm_args = {
     "plot_dir": "run_scripts/out/imgs",
     "metrics_dir": "run_scripts/out/metric",
     "model_dir": "run_scripts/out/models",
-    "important_cols":['1','9','10','12','13','14','15','23'],
+    "important_cols":['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18'],
     "plot_cols":['9','10','12'],
     "use_important_cols":False,
     "sub_dataset":"null"
 }
 
-args = deeplog_args
+args = lstmvaedistgmm_args
 
 
 def prepare_data(args,machine_name):
@@ -309,6 +344,9 @@ def prepare_data(args,machine_name):
     if args['use_important_cols']:
         train_df = train_df.loc[:,args['important_cols']]
         test_df = test_df.loc[:,args['important_cols']]
+     
+    if args['use_important_cols']:   
+        columns = [str(i+1) for i in range(len(args['important_cols']))]
     
     # normalize
     scaler = StandardScaler()
@@ -316,7 +354,7 @@ def prepare_data(args,machine_name):
     test_np = scaler.transform(test_df)
     
     # test_with_label
-    columns = [str(i+1) for i in range(args['dataset_dim'])]
+    
     test_with_label = np.concatenate([test_np, test_label.reshape(-1,1)], axis=1)
     test_with_label_df = pd.DataFrame(test_with_label)
     columns.append(args['anomal_col']) # inplace
@@ -336,14 +374,14 @@ def train(args,machine_name):
     test_anomal_num = int(np.sum(test_with_label_df[args['anomal_col']]))
     test_data_num = int(test_np.shape[0])
     
-    transformer_DL = DeepLogSKI(
-                        window_size=args['window_size'],
-                        stacked_layers=args['stacked_layers'],
-                        contamination=args['contamination'],
-                        epochs=args['epochs'],
-                        batch_size = args['batch_size'],
-                        hidden_size=args['hidden_size']
-                                )
+    # transformer_DL = DeepLogSKI(
+    #                     window_size=args['window_size'],
+    #                     stacked_layers=args['stacked_layers'],
+    #                     contamination=args['contamination'],
+    #                     epochs=args['epochs'],
+    #                     batch_size = args['batch_size'],
+    #                     hidden_size=args['hidden_size']
+    #                             )
     
     # transformer_DL = LSTMODetectorSKI(
     #     min_attack_time = args['min_attack_time'],
@@ -417,6 +455,18 @@ def train(args,machine_name):
     #     encoder_neurons = args["encoder_neurons"],
     #     decoder_neurons = args["decoder_neurons"]
     # )
+    
+    transformer_DL = LSTMVAEDISTGMMSKI(
+        num_gmm = args["num_gmm"],
+        window_size=args['window_size'],
+        hidden_size = args['hidden_size'],
+        preprocessing = args["preprocessing"],
+        batch_size = args["batch_size"],
+        epochs = args["epochs"],
+        latent_dim = args["latent_dim"],
+        encoder_neurons = args["encoder_neurons"],
+        decoder_neurons = args["decoder_neurons"]
+    )
     
     model_dir =  os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
     if not os.path.exists(model_dir):

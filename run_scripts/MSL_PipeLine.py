@@ -64,6 +64,7 @@ deeplog_args = {
     "dataset_dim":55,
     "batch_size":50,
     "anomal_col":"anomaly",
+    "model_dir":"run_scripts/out/models",
     "hidden_size":64,
     "plot":False,
     "plot_dir": "run_scripts/out/imgs",

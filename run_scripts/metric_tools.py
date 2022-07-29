@@ -72,9 +72,10 @@ def multi_threshold_eval(args,pred_score,label):
         res['precision'].append(round(precision,4))
         res['recall'].append(round(recall,4))
         res['f1'].append(round(f1, 4))
-    res = pd.DataFrame(res)
-    print(res)
-    res.to_csv(os.path.join(args['metrics_dir'],"{}_{}_{}.csv".format(args['dataset_name'], args['model'], args['sub_dataset'])))
+    res_df = pd.DataFrame(res)
+    print(res_df)
+    res_df.to_csv(os.path.join(args['metrics_dir'],"{}_{}_{}.csv".format(args['dataset_name'], args['model'], args['sub_dataset'])))
+    return res
 
 
 def merge_smd_metric(metric_dir,model):
@@ -122,7 +123,7 @@ def merge_all_metric(metric_dir,models):
 if __name__ == "__main__":
 
     metric_dir = "run_scripts/out/metric"
-    models = ["AE", "VAE", "DAGMM", "lstmod", "LSTMAE", "LSTMVAE", "deeplog", "telemanom","LSTMVAEGMM"]
+    models = ["AE", "VAE", "DAGMM", "lstmod", "LSTMAE", "LSTMVAE", "deeplog", "telemanom","LSTMVAEGMM","LSTMVAEDISTGMM"]
     
     for m in models:
         merge_smd_metric(metric_dir=metric_dir,model=m)

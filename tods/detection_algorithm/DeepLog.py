@@ -8,8 +8,8 @@ import numpy
 import typing
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout , LSTM
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Dense, Dropout , LSTM, Lambda,Input
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.losses import mean_squared_error
 from sklearn.preprocessing import StandardScaler
@@ -297,24 +297,16 @@ class DeeplogLstm(BaseDetector):
             return : model
         """
 
-        model = Sequential()
+        inputs = Input(shape=(None, self.n_features_,), name="inputs")
 
-        #InputLayer
-        model.add(LSTM(self.hidden_size,return_sequences=True,dropout = self.dropout_rate))
-        #stacked layer
-        for layers in range(self.stacked_layers):
-            if(layers == self.stacked_layers -1 ):
-                model.add(LSTM(self.hidden_size, return_sequences=False, dropout = self.dropout_rate))
-                continue
-            model.add(LSTM(self.hidden_size, return_sequences=True, dropout = self.dropout_rate)) # pragma: no cover
-        #output layer
-
-        model.add(Dense(self.n_features_))
+        # return_sequences=True ！！！！
+        layer = LSTM(self.hidden_size,return_sequences=True,dropout = self.dropout_rate)(inputs)
+        layer = LSTM(self.hidden_size,return_sequences=False,dropout = self.dropout_rate)(layer)
+        output = Dense(self.n_features_)(layer)
+     
+        model=Model(inputs,output)
         # Compile model
         model.compile(loss=self.loss, optimizer=self.optimizer)
-        if self.verbose >= 1:
-            #print(model.summary())
-            pass
         return model
 
     def fit(self,X,y=None):
@@ -425,7 +417,7 @@ class DeeplogLstm(BaseDetector):
             The anomaly score of the input samples.
         """
         # check_is_fitted(self, ['model_', 'history_'])
-        loaded_model = tf.keras.models.load_model(model_path,custom_objects={'energy': self.energy,'sampling':self.sampling})
+        loaded_model = tf.keras.models.load_model(model_path)
         X = check_array(X)
   
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)

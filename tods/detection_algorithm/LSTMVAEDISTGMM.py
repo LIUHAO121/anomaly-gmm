@@ -201,7 +201,7 @@ class Hyperparams(Hyperparams_ODBase):
     )
 
 
-class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Params, Hyperparams]):
+class LSTMVAEDISTGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Params, Hyperparams]):
     """
     A primitive that uses DeepLog for outlier detection
 
@@ -240,7 +240,7 @@ class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Param
             loss = keras.losses.mean_squared_error
         else:
             raise ValueError('VAE only suports mean squered error for now')
-        self._clf = LstmVAEGMM(hidden_size=hyperparams['hidden_size'],
+        self._clf = LSTMVAEDISTGMM(hidden_size=hyperparams['hidden_size'],
                             encoder_neurons=hyperparams['encoder_neurons'],
                             decoder_neurons=hyperparams['decoder_neurons'],
                             latent_dim=hyperparams['latent_dim'],
@@ -320,7 +320,7 @@ class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Param
         super().set_params(params=params)
 
 
-class LstmVAEGMM(BaseDetector):
+class LSTMVAEDISTGMM(BaseDetector):
     """Class to Implement Deep Log LSTM based on "https://www.cs.utah.edu/~lifeifei/papers/deeplog.pdf
        Only Parameter Value anomaly detection layer has been implemented for time series data"""
 
@@ -332,7 +332,7 @@ class LstmVAEGMM(BaseDetector):
                  output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0, num_gmm:int=4,
                  window_size: int = 1, stacked_layers: int  = 1, verbose : int = 1, contamination:int = 0.001):
 
-        super(LstmVAEGMM, self).__init__(contamination=contamination)
+        super(LSTMVAEDISTGMM, self).__init__(contamination=contamination)
         
         self.hidden_size = hidden_size
         self.loss = loss
@@ -398,6 +398,26 @@ class LstmVAEGMM(BaseDetector):
         return K.mean(reconstruction_loss + kl_loss) + 0.1 * K.mean(energy_out)
 
 
+    def distance(self, x_dash_latent):
+        def euclid_norm(x):
+            return tf.sqrt(tf.reduce_sum(tf.square(x), axis=2))
+
+        # Calculate Euclid norm, distance
+        x, x_dash,latent = x_dash_latent
+        norm_x = euclid_norm(x)
+        norm_x_dash = euclid_norm(x_dash)
+        dist_x = euclid_norm(x - x_dash)
+        dot_x = tf.reduce_sum(x * x_dash, axis=2)
+
+        # Based on the original paper, features of reconstraction error
+        # are composed of these loss functions:
+        #  1. loss_E : relative Euclidean distance
+        #  2. loss_C : cosine similarity
+        min_val = 1e-3
+        loss_E = dist_x  / (norm_x + min_val)
+        loss_C = 0.5 * (1.0 - dot_x / (norm_x * norm_x_dash + min_val))
+        return tf.concat([loss_E[:,:,None], loss_C[:,:,None], latent], axis=2)
+
     def energy(self, gamma_and_z):
         """
         calculate energy for every sample in z
@@ -415,19 +435,11 @@ class LstmVAEGMM(BaseDetector):
         gamma_sum = tf.reduce_sum(gamma, axis=1) # (i,k)
         mu = tf.einsum('itk,itl->ikl',gamma,z) / gamma_sum[:,:,None]  # (i,k,l) 每个sample之间的mu和sigma都是独立的
         
-        # z_centered = tf.sqrt(gamma[:,:,:,None]) * (z[:,:,None,:] - mu[:,None, :, :]) # (i,t,k,l)
-        # sigma = tf.einsum('itkl,itkm->iklm',z_centered,z_centered) / gamma_sum[:,:,None,None] # (i,k,l,m) 
-        
         z_centered = z[:,:,None,:] - mu[:,None, :, :] # (i,t,k,l)
         z_centered_last = z_centered[:,-1,:,:]
         z_c_left = z_centered_last[:,:,None,:]
         z_c_right = z_centered_last[:,:,:,None]
         
-        # inverse_sigma = tf.linalg.inv(sigma)  # (i,k,l,m)
-        # matrix_matmul = tf.squeeze(tf.matmul(tf.matmul(z_c_left,inverse_sigma),z_c_right)) # (i,k)
-        # e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
-        # det_i_k = tf.sqrt(tf.math.abs((tf.linalg.det(2 * 3.1415 * sigma)))) # (i,k)
-        # e = tf.reduce_sum((e_i_k / det_i_k) * gamma[:,-1,:],axis=-1)
         
         matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right))
         e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
@@ -488,11 +500,23 @@ class LstmVAEGMM(BaseDetector):
         outputs = decoder(encoder(inputs)[2])
         
         
+        dist_input1 = Input(shape=(None, self.n_features_,), name="dist_input1")
+        dist_input2 = Input(shape=(None, self.n_features_,), name="dist_input2")
+        dist_input3 = Input(shape=(None, self.latent_dim,), name="dist_input3") # latent
+        
+        dist_res = Lambda(self.distance)([dist_input1, dist_input2, dist_input3])
+        
+        distance_model = Model([dist_input1,dist_input2,dist_input3],dist_res)
+        if self.verbose >= 1:
+            distance_model.summary()
+        
+         # Generate distance
+        dist_res = distance_model([inputs, decoder(encoder(inputs)[2]),encoder(inputs)[2]])
+        
         # estimate model
-        est_input = Input(shape=(None, self.n_features_,), name="est_input")
-        est_outputs = Dense(self.n_features_, activation=self.output_activation)(est_input)
-        est_outputs = Dense(16, activation=self.output_activation)(est_input)
+        est_input = Input(shape=(None,self.latent_dim+2,), name="est_input")
         est_outputs = Dense(8, activation=self.output_activation)(est_input)
+        est_outputs = Dense(4, activation=self.output_activation)(est_input)
         est_outputs = Dense(self.num_gmm)(est_outputs) # (i,t,k）
         est_outputs = tf.nn.softmax(est_outputs)
         
@@ -500,11 +524,11 @@ class LstmVAEGMM(BaseDetector):
         if self.verbose >= 1:
             est_model.summary()
             
-        est_outputs = est_model(decoder(encoder(inputs)[2]) - inputs) # gamma
+        est_outputs = est_model(distance_model([inputs, decoder(encoder(inputs)[2]),encoder(inputs)[2]])) # gamma
         
         # energy calculate
         energy_input1 = Input(shape=(None, self.num_gmm,), name="energy_input1")
-        energy_input2 = Input(shape=(None, self.n_features_,), name="energy_input2")
+        energy_input2 = Input(shape=(None, self.latent_dim+2,), name="energy_input2")
         
         energy_out = Lambda(self.energy)([energy_input1,energy_input2])
         
@@ -512,9 +536,8 @@ class LstmVAEGMM(BaseDetector):
         if self.verbose >= 1:
             energy_model.summary()
         
-        energy_out = energy_model([est_model(decoder(encoder(inputs)[2])), decoder(encoder(inputs)[2])])
+        energy_out = energy_model([est_model(distance_model([inputs,decoder(encoder(inputs)[2]),encoder(inputs)[2]])),distance_model([inputs,decoder(encoder(inputs)[2]),encoder(inputs)[2]])])
         
-
         # lstm vae gmm
         lstmvaegmm = Model(inputs, energy_out)
         
@@ -628,7 +651,7 @@ class LstmVAEGMM(BaseDetector):
             The anomaly score of the input samples.
         """
         # check_is_fitted(self, ['model_', 'history_'])
-        loaded_model = tf.keras.models.load_model(model_path,custom_objects={'energy': self.energy,'sampling':self.sampling})
+        loaded_model = tf.keras.models.load_model(model_path,custom_objects={'energy': self.energy,'sampling':self.sampling,'distance':self.distance})
         X = check_array(X)
         #print("inside")
         #print(X.shape)

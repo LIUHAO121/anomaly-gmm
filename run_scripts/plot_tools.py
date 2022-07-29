@@ -46,6 +46,7 @@ def plot_predict(df,col_name,anomal_col,predict,threshold,save_path):
     plt.legend()
     plt.savefig(save_path)
     plt.close('all')
+    print("save picture {} ...".format(save_path))
     
     
     
@@ -104,21 +105,21 @@ def plot_before_train(args, df):
             df=df,
             col_name=col,
             anomal_col=args['anomal_col'],
-            save_path=os.path.join(args['plot_dir'],"{}_{}.png".format(args['dataset_name'],col)))
+            save_path=os.path.join(args['plot_dir'],args['dataset_name'],"{}_{}.png".format(args['dataset_name'],col)))
         
-    plot_anomal_multi_columns_3d(
-                        df,
-                        col_names=args['plot_cols'],
-                        anomal_col=args['anomal_col'],
-                        save_path=os.path.join(args['plot_dir'],'{}_multicols_3d.png'.format(args['dataset_name']))
-                        )  
+    # plot_anomal_multi_columns_3d(
+    #                     df,
+    #                     col_names=args['plot_cols'],
+    #                     anomal_col=args['anomal_col'],
+    #                     save_path=os.path.join(args['plot_dir'],'{}_multicols_3d.png'.format(args['dataset_name']))
+    #                     )  
 
 def plot_after_train(args,df,predict):
     
     """
     df 必须包括标注列
     """
-    threshold =  np.percentile(predict, 100 * (1 - args['contaminations'][2]))
+    threshold =  np.percentile(predict, 100 * (1 - args['contamination']))
     max_score = np.max(predict)
     rescale_predict = predict / max_score
     rescale_threshod = threshold / max_score
@@ -129,4 +130,4 @@ def plot_after_train(args,df,predict):
                      anomal_col=args['anomal_col'], 
                      predict=rescale_predict, 
                      threshold=rescale_threshod_series,
-                     save_path=os.path.join(args['plot_dir'],'{}_{}_{}_{}_predict.png'.format(args['dataset_name'],args['model'],args['sub_dataset'],col)))
+                     save_path=os.path.join(args['plot_dir'],args['dataset_name'],'{}_{}_{}_{}_predict.png'.format(args['dataset_name'],args['model'],args['sub_dataset'],col)))

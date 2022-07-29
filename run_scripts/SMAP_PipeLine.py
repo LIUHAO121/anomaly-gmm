@@ -48,19 +48,20 @@ for device in gpu_devices:
 dataset_name = "SMAP"
 dataset_dim = 25
 
-deep_args = {
+deeplog_args = {
     "window_size":100, 
     "stacked_layers":1,
     "contamination":0.1, 
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "epochs":6,
     "dataset_dir":'datasets/SMAP',
+    "model_dir":"run_scripts/out/models",
     "dataset_name":"SMAP",
     "dataset_dim":25,
     "batch_size":50,
     "anomal_col":"anomaly",
     "hidden_size":64,
-    "plot":True,
+    "plot":False,
     "plot_dir": "run_scripts/out/imgs",
     "metrics_dir": "run_scripts/out/metric",
     "important_cols":['1','9','10','12','13','14','15','23'],
@@ -284,7 +285,7 @@ lstmvaegmm_args = {
     "sub_dataset":"null"
 }
 
-args = lstmvaegmm_args
+args = deeplog_args
 
 
 def prepare_data(args):
@@ -336,14 +337,14 @@ def train(args):
     test_anomal_num = int(np.sum(test_with_label_df[args['anomal_col']]))
     test_data_num = int(test_np.shape[0])
     
-    # transformer_DL = DeepLogSKI(
-    #                     window_size=args['window_size'],
-    #                     stacked_layers=args['stacked_layers'],
-    #                     contamination=args['contamination'],
-    #                     epochs=args['epochs'],
-    #                     batch_size = args['batch_size'],
-    #                     hidden_size=args['hidden_size']
-    #                             )
+    transformer_DL = DeepLogSKI(
+                        window_size=args['window_size'],
+                        stacked_layers=args['stacked_layers'],
+                        contamination=args['contamination'],
+                        epochs=args['epochs'],
+                        batch_size = args['batch_size'],
+                        hidden_size=args['hidden_size']
+                                )
     
     # transformer_DL = LSTMODetectorSKI(
     #     min_attack_time = args['min_attack_time'],
@@ -405,22 +406,20 @@ def train(args):
     #     decoder_neurons = args["decoder_neurons"],
     # )
     
-    
-    
     # transformer_DL = OCSVMSKI()
     
     
-    transformer_DL = LSTMVAEGMMSKI(
-        num_gmm = args["num_gmm"],
-        window_size=args['window_size'],
-        hidden_size = args['hidden_size'],
-        preprocessing = args["preprocessing"],
-        batch_size = args["batch_size"],
-        epochs = args["epochs"],
-        latent_dim = args["latent_dim"],
-        encoder_neurons = args["encoder_neurons"],
-        decoder_neurons = args["decoder_neurons"]
-    )
+    # transformer_DL = LSTMVAEGMMSKI(
+    #     num_gmm = args["num_gmm"],
+    #     window_size=args['window_size'],
+    #     hidden_size = args['hidden_size'],
+    #     preprocessing = args["preprocessing"],
+    #     batch_size = args["batch_size"],
+    #     epochs = args["epochs"],
+    #     latent_dim = args["latent_dim"],
+    #     encoder_neurons = args["encoder_neurons"],
+    #     decoder_neurons = args["decoder_neurons"]
+    # )
     
     model_dir =  os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
     if not os.path.exists(model_dir):
