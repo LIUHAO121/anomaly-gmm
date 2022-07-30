@@ -13,6 +13,9 @@ from tods.sk_interface.detection_algorithm.DAGMM_skinterface import DAGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAE_skinterface import LSTMVAESKI
 from tods.sk_interface.detection_algorithm.OCSVM_skinterface import OCSVMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAEGMM_skinterface import LSTMVAEGMMSKI
+from tods.sk_interface.detection_algorithm.LSTMVAEDISTGMM_skinterface import LSTMVAEDISTGMMSKI
+from tods.sk_interface.detection_algorithm.GRUVAEGMM_skinterface import GRUVAEGMMSKI
+from tods.sk_interface.detection_algorithm.LSTMAEGMM_skinterface import LSTMAEGMMSKI
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
@@ -48,247 +51,6 @@ for device in gpu_devices:
     
 dataset_name = "MSL"
 dataset_dim = 55  
-
-
-
-
-
-deeplog_args = {
-    "window_size":100, 
-    "stacked_layers":1,
-    "contamination":0.1, 
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "epochs":6,
-    "dataset_dir":'datasets/MSL',
-    "dataset_name":"MSL",
-    "dataset_dim":55,
-    "batch_size":50,
-    "anomal_col":"anomaly",
-    "model_dir":"run_scripts/out/models",
-    "hidden_size":64,
-    "plot":False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9','10','12'],
-    "use_important_cols":False,
-    "model":"deeplog",
-    "sub_dataset":"null"
-}
-
-lstmod_args = {
-    "stacked_layers":1,
-    "contamination":0.1, 
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "epochs":6,
-    "min_attack_time":5,
-    "n_hidden_layer":2,
-    "hidden_dim":8,
-    "dataset_dir":'datasets/MSL',
-    "dataset_name":"MSL",
-    "dataset_dim": 55,
-    "batch_size": 50,
-    "hidden_size": 8,
-    "anomal_col":"anomaly",
-    "model": "lstmod",
-    "plot": False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9', '10', '12'],
-    "use_important_cols": False,
-    "sub_dataset": "null"
-}
-
-telemanom_args = {
-    "stacked_layers":1,
-    "contamination":0.1, 
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4],
-    "epochs":3,
-    "min_attack_time":5,
-    "hidden_dim":8,
-    "dataset_dir":'datasets/MSL',
-    "dataset_name":"MSL",
-    "dataset_dim": 55,
-    "l_s":100,
-    "layers":[64,64],   # No of units for the 2 lstm layers
-    "n_predictions":2,
-    "window_size_":1,
-    "anomal_col":"anomaly",
-    "model": "telemanom",
-    "plot": False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9', '10', '12'],
-    "use_important_cols": False,
-    "sub_dataset": "null"
-}
-
-ae_args = {
-    "preprocessing":False,
-    "batch_size":32,
-    "hidden_neurons":[20,10,20],
-    # "hidden_neurons":[15,1,15],
-    "contamination":0.1, 
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4],
-    "epochs":10,
-    "dataset_dir":'datasets/MSL',
-    "dataset_name":"MSL",
-    "dataset_dim": 55,
-    "anomal_col":"anomaly",
-    "model": "AE",
-    "plot": False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9', '10', '12'],
-    "use_important_cols": False,
-    "sub_dataset": "null"
-}
-
-lstmae_args = {
-    "preprocessing":False,
-    "hidden_neurons":[16,3,16],
-    "window_size":100, 
-    "stacked_layers":1,
-    "contamination":0.1, 
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "epochs": 6,
-    "dataset_dir":f'datasets/{dataset_name}',
-    "dataset_name":dataset_name,
-    "dataset_dim":dataset_dim,
-    "batch_size":50,
-    "anomal_col":"anomaly",
-    "hidden_size":32,
-    "plot":False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9','10','12'],
-    "use_important_cols":False,
-    "model":"LSTMAE",
-    "sub_dataset":"null"
-}\
-
-vae_args = {
-    "model":"VAE",
-    "preprocessing":False,
-    "encoder_neurons":[128, 64, 32],
-    "decoder_neurons":[32, 64, 128],
-    "latent_dim":3,
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "epochs": 6,
-    "dataset_dir":f'datasets/{dataset_name}',
-    "dataset_name":dataset_name,
-    "dataset_dim":dataset_dim,
-    "batch_size":50,
-    "anomal_col":"anomaly",
-    "hidden_size":32,
-    "plot":False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9','10','12'],
-    "use_important_cols":False,
-    "sub_dataset":"null"
-}
-
-dagmm_args = {
-    "model":"DAGMM",
-    "normalize":False,
-    "comp_hiddens":[16,8,1],
-    "est_hiddens":[8,4],
-    "minibatch_size":1024,
-    "epoch_size":100,
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "epochs": 6,
-    "dataset_dir":f'datasets/{dataset_name}',
-    "dataset_name":dataset_name,
-    "dataset_dim":dataset_dim,
-    "anomal_col":"anomaly",
-    "plot":False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9','10','12'],
-    "use_important_cols":False,
-    "sub_dataset":"null"
-}
-
-lstmvae_args = {
-    "model":"LSTMVAE",
-    "preprocessing":False,
-    "window_size":100, 
-    "batch_size":32,
-    "hidden_size":64,
-    "encoder_neurons":[64,32,16],
-    "decoder_neurons":[16,32,64],
-    "latent_dim":2,
-    "epoch_size":32,
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "contamination":0.01,
-    "epochs": 1,
-    "dataset_dir":f'datasets/{dataset_name}',
-    "dataset_name":dataset_name,
-    "dataset_dim":dataset_dim,
-    "anomal_col":"anomaly",
-    "plot":False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9','10','12'],
-    "use_important_cols":False,
-    "sub_dataset":"null"
-}
-
-ocsvm_args = {
-    "model":"OCSVM",
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "epochs": 6,
-    "dataset_dir":f'datasets/{dataset_name}',
-    "dataset_name":dataset_name,
-    "dataset_dim":dataset_dim,
-    "anomal_col":"anomaly",
-    "plot":False,
-    "contamination":0.01,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9','10','12'],
-    "use_important_cols":False,
-    "sub_dataset":"null"
-}
-
-lstmvaegmm_args = {
-    "model":"LSTMVAEGMM",
-    "num_gmm":4,
-    "preprocessing":False,
-    "window_size":100, 
-    "batch_size":64,
-    "hidden_size":64,
-    "encoder_neurons":[64,32,16],
-    "decoder_neurons":[16,32,64],
-    "latent_dim":2,
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "contamination":0.01,
-    "epochs": 2,
-    "dataset_dir":f'datasets/{dataset_name}',
-    "dataset_name":dataset_name,
-    "dataset_dim":dataset_dim,
-    "anomal_col":"anomaly",
-    "plot":False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "model_dir": "run_scripts/out/models",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9','10','12'],
-    "use_important_cols":False,
-    "sub_dataset":"null"
-}
-
-args = lstmvaegmm_args
-
 
 
 
@@ -333,102 +95,335 @@ def prepare_data(args):
     return train_np , test_np, test_with_label_df 
 
 
-def train(args):
 
+dagmm_args = {
+    "model":"DAGMM",
+    "normalize":False,
+    "comp_hiddens":[16,8,1],
+    "est_hiddens":[8,4],
+    "minibatch_size":1024,
+    "epoch_size":100,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs": 2,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+lstmod_args = {
+    "model": "lstmod",
+    "stacked_layers":1,
+    "contamination":0.1, 
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs":1,
+    "min_attack_time":5,
+    "n_hidden_layer":2,
+    "hidden_dim":8,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "batch_size": 64,
+    "hidden_size": 8,
+    "anomal_col":"anomaly",
+    "plot": False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9', '10', '12'],
+    "use_important_cols": False,
+    "sub_dataset": "null"
+}
+
+lstmae_args = {
+    "model":"LSTMAE",
+    "preprocessing":False,
+    "hidden_neurons":[16,3,16],
+    "window_size":100, 
+    "stacked_layers":1,
+    "contamination":0.1, 
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs":2,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "batch_size":64,
+    "anomal_col":"anomaly",
+    "hidden_size":32,
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+telemanom_args = {
+    "model": "telemanom",
+    "stacked_layers":1,
+    "contamination":0.1, 
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4],
+    "epochs":3,
+    "n_hidden_layer":2,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "l_s":100,
+    "layers":[64,64],   # No of units for the 2 lstm layers
+    "n_predictions":2,
+    "window_size_":1,
+    "anomal_col":"anomaly",
+    "plot": False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9', '10', '12'],
+    "use_important_cols": False,
+    "sub_dataset": "null"
+}
+
+deeplog_args = {
+    "model":"deeplog",
+    "window_size":100, 
+    "stacked_layers":1,
+    "contamination":0.1, 
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "epochs":2,
+    "dataset_dir":'datasets/SMAP',
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "batch_size":50,
+    "anomal_col":"anomaly",
+    "hidden_size":64,
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+lstmvaegmm_args = {
+    "model":"LSTMVAEGMM",
+    "num_gmm":4,
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":64,
+    "hidden_size":64,
+    "encoder_neurons":[64,32,16],
+    "decoder_neurons":[16,32,64],
+    "latent_dim":2,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination":0.01,
+    "epochs": 2,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+lstmvaedistgmm_args = {
+    "model":"LSTMVAEDISTGMM",
+    "num_gmm":4,
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":64,
+    "hidden_size":64,
+    "encoder_neurons":[32,16],
+    "decoder_neurons":[16,32],
+    "latent_dim":2,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination":0.01,
+    "epochs": 2,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
+    "important_cols":['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+gruvaegmm_args = {
+    "model":"GRUVAEGMM",
+    "num_gmm":4,
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":64,
+    "hidden_size":64,
+    "encoder_neurons":[64,32,16],
+    "decoder_neurons":[16,32,64],
+    "latent_dim":2,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination":0.01,
+    "epochs": 2,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+lstmaegmm_args = {
+    "model":"LSTMAEGMM",
+    "num_gmm":4,
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":64,
+    "hidden_size":64,
+    "encoder_neurons":[64,32,16],
+    "decoder_neurons":[16,32,64],
+    "latent_dim":2,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination":0.01,
+    "epochs": 2,
+    "dataset_dir":f'datasets/{dataset_name}',
+    "dataset_name":dataset_name,
+    "dataset_dim":dataset_dim,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+def train(model):
+    model2args = {
+        "DAGMM":dagmm_args,
+        "lstmod":lstmod_args,
+        "LSTMAE":lstmae_args,
+        "telemanom":telemanom_args,
+        "deeplog":deeplog_args,
+        "LSTMVAEGMM": lstmvaegmm_args,
+        "LSTMVAEDISTGMM":lstmvaedistgmm_args,
+        "GRUVAEGMM": gruvaegmm_args,
+        "LSTMAEGMM": lstmaegmm_args
+    }
+    args = model2args[model]
+    args['model_dir'] = "run_scripts/out/models"
     train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
-    
-    train_np=train_np[2000:3000]
-    test_np=test_np[2000:3000]
-    test_with_label_df=test_with_label_df[2000:3000]
-    test_anomal_num = int(np.sum(test_with_label_df[args['anomal_col']]))
-    test_data_num = int(test_np.shape[0])
-    
-    # transformer_DL = DeepLogSKI(
-    #                     window_size=args['window_size'],
-    #                     stacked_layers=args['stacked_layers'],
-    #                     contamination=args['contamination'],
-    #                     epochs=args['epochs'],
-    #                     batch_size = args['batch_size'],
-    #                     hidden_size=args['hidden_size']
-    #                             )
-    
-    # transformer_DL = LSTMODetectorSKI(
-    #     min_attack_time = args['min_attack_time'],
-    #     epochs = args['epochs'],
-    #     batch_size = args['batch_size'],
-    #     hidden_dim = args['hidden_dim'],
-    #     n_hidden_layer = args['n_hidden_layer']
-    # )
-    
-    # transformer_DL = TelemanomSKI(
-    #     epochs = args['epochs'],
-    #     l_s = args['l_s'],
-    #     n_predictions = args['n_predictions'],
-    #     layers = args['layers'],
-    #     window_size_ = args['window_size_']
-    # )
-    
-    # transformer_DL = AutoEncoderSKI(
-    #     preprocessing = args["preprocessing"],
-    #     batch_size = args["batch_size"],
-    #     epochs = args["epochs"],
-    #     hidden_neurons = args["hidden_neurons"],
-    # )
-    
-    # transformer_DL = LSTMAESKI(
-    #     window_size = args['window_size'],
-    #     preprocessing = args["preprocessing"],
-    #     batch_size = args["batch_size"],
-    #     epochs = args["epochs"],
-    #     hidden_neurons = args["hidden_neurons"],
-    #     hidden_size=args['hidden_size']
-    # )
-    
-    # transformer_DL = VariationalAutoEncoderSKI(
-    #     preprocessing = args["preprocessing"],
-    #     batch_size = args["batch_size"],
-    #     epochs = args["epochs"],
-    #     encoder_neurons = args["encoder_neurons"],
-    #     decoder_neurons = args["decoder_neurons"],
-    #     latent_dim = args["latent_dim"]
-    # )
-    
-    
-    # transformer_DL = DAGMMSKI(
-    #     normalize = args["normalize"],
-    #     comp_hiddens = args["comp_hiddens"],
-    #     est_hiddens = args["est_hiddens"],
-    #     minibatch_size = args["minibatch_size"],
-    #     epoch_size = args["epoch_size"],
-    # )
-    
-    # transformer_DL = LSTMVAESKI(
-    #     window_size=args['window_size'],
-    #     hidden_size = args['hidden_size'],
-    #     preprocessing = args["preprocessing"],
-    #     batch_size = args["batch_size"],
-    #     epochs = args["epochs"],
-    #     latent_dim = args["latent_dim"],
-    #     encoder_neurons = args["encoder_neurons"],
-    #     decoder_neurons = args["decoder_neurons"],
-    # )
-    
-    
-    # transformer_DL = OCSVMSKI()
-    
-    transformer_DL = LSTMVAEGMMSKI(
-        num_gmm = args["num_gmm"],
-        window_size=args['window_size'],
-        hidden_size = args['hidden_size'],
-        preprocessing = args["preprocessing"],
-        batch_size = args["batch_size"],
-        epochs = args["epochs"],
-        latent_dim = args["latent_dim"],
-        encoder_neurons = args["encoder_neurons"],
-        decoder_neurons = args["decoder_neurons"]
-    )
-    
 
+    
+    model2ski = {
+        "DAGMM":DAGMMSKI(
+            normalize = model2args["DAGMM"]["normalize"],
+            comp_hiddens = model2args["DAGMM"]["comp_hiddens"],
+            est_hiddens = model2args["DAGMM"]["est_hiddens"],
+            minibatch_size = model2args["DAGMM"]["minibatch_size"],
+            epoch_size = model2args["DAGMM"]["epoch_size"],
+        ),
+        "lstmod":LSTMODetectorSKI(
+            min_attack_time = model2args["lstmod"]['min_attack_time'],
+            epochs = model2args["lstmod"]['epochs'],
+            batch_size = model2args["lstmod"]['batch_size'],
+            hidden_dim = model2args["lstmod"]['hidden_dim'],
+            n_hidden_layer = model2args["lstmod"]['n_hidden_layer']
+        ),
+        "LSTMAE":LSTMAESKI(
+            window_size = model2args["LSTMAE"]['window_size'],
+            preprocessing = model2args["LSTMAE"]["preprocessing"],
+            batch_size = model2args["LSTMAE"]["batch_size"],
+            epochs = model2args["LSTMAE"]["epochs"],
+            hidden_neurons = model2args["LSTMAE"]["hidden_neurons"],
+            hidden_size=model2args["LSTMAE"]['hidden_size']
+        ),
+        "telemanom":TelemanomSKI(
+            epochs = model2args["telemanom"]['epochs'],
+            l_s = model2args["telemanom"]['l_s'],
+            n_predictions = model2args["telemanom"]['n_predictions'],
+            layers = model2args["telemanom"]['layers'],
+            window_size_ = model2args["telemanom"]['window_size_']
+        ),
+        "deeplog":DeepLogSKI(
+            window_size=model2args["deeplog"]['window_size'],
+            stacked_layers=model2args["deeplog"]['stacked_layers'],
+            contamination=model2args["deeplog"]['contamination'],
+            epochs=model2args["deeplog"]['epochs'],
+            batch_size = model2args["deeplog"]['batch_size'],
+            hidden_size=model2args["deeplog"]['hidden_size']
+        ),
+        "LSTMVAEGMM":LSTMVAEGMMSKI(
+            num_gmm = model2args["LSTMVAEGMM"]["num_gmm"],
+            window_size=model2args["LSTMVAEGMM"]['window_size'],
+            hidden_size = model2args["LSTMVAEGMM"]['hidden_size'],
+            preprocessing = model2args["LSTMVAEGMM"]["preprocessing"],
+            batch_size = model2args["LSTMVAEGMM"]["batch_size"],
+            epochs = model2args["LSTMVAEGMM"]["epochs"],
+            latent_dim = model2args["LSTMVAEGMM"]["latent_dim"],
+            encoder_neurons = model2args["LSTMVAEGMM"]["encoder_neurons"],
+            decoder_neurons = model2args["LSTMVAEGMM"]["decoder_neurons"]
+        ),
+        "LSTMVAEDISTGMM":LSTMVAEDISTGMMSKI(
+            num_gmm = model2args["LSTMVAEDISTGMM"]["num_gmm"],
+            window_size=model2args["LSTMVAEDISTGMM"]['window_size'],
+            hidden_size = model2args["LSTMVAEDISTGMM"]['hidden_size'],
+            preprocessing = model2args["LSTMVAEDISTGMM"]["preprocessing"],
+            batch_size = model2args["LSTMVAEDISTGMM"]["batch_size"],
+            epochs = model2args["LSTMVAEDISTGMM"]["epochs"],
+            latent_dim = model2args["LSTMVAEDISTGMM"]["latent_dim"],
+            encoder_neurons = model2args["LSTMVAEDISTGMM"]["encoder_neurons"],
+            decoder_neurons = model2args["LSTMVAEDISTGMM"]["decoder_neurons"]
+        ),
+        "GRUVAEGMM":GRUVAEGMMSKI(
+            num_gmm = model2args["GRUVAEGMM"]["num_gmm"],
+            window_size=model2args["GRUVAEGMM"]['window_size'],
+            hidden_size = model2args["GRUVAEGMM"]['hidden_size'],
+            preprocessing = model2args["GRUVAEGMM"]["preprocessing"],
+            batch_size = model2args["GRUVAEGMM"]["batch_size"],
+            epochs = model2args["GRUVAEGMM"]["epochs"],
+            latent_dim = model2args["GRUVAEGMM"]["latent_dim"],
+            encoder_neurons = model2args["GRUVAEGMM"]["encoder_neurons"],
+            decoder_neurons = model2args["GRUVAEGMM"]["decoder_neurons"]
+        ),
+        "LSTMAEGMM":LSTMAEGMMSKI(
+            num_gmm = model2args["LSTMAEGMM"]["num_gmm"],
+            window_size=model2args["LSTMAEGMM"]['window_size'],
+            hidden_size = model2args["LSTMAEGMM"]['hidden_size'],
+            preprocessing = model2args["LSTMAEGMM"]["preprocessing"],
+            batch_size = model2args["LSTMAEGMM"]["batch_size"],
+            epochs = model2args["LSTMAEGMM"]["epochs"],
+            latent_dim = model2args["LSTMAEGMM"]["latent_dim"],
+            encoder_neurons = model2args["LSTMAEGMM"]["encoder_neurons"],
+            decoder_neurons = model2args["LSTMAEGMM"]["decoder_neurons"]
+        )
+    }
+    
+    transformer_DL = model2ski[model]
+    
     model_dir =  os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
     if not os.path.exists(model_dir):
         train_step(
@@ -445,10 +440,11 @@ def train(args):
             test_np=test_np,
             test_with_label_df=test_with_label_df
         )
-
-
-
-if __name__ == "__main__":
-    train(args=args)
     
 
+if __name__ == "__main__":
+    # models = ["DAGMM","lstmod", "LSTMAE", "telemanom","deeplog", "LSTMVAEGMM"]
+    models = ["GRUVAEGMM","LSTMAEGMM","LSTMVAEDISTGMM"]  # "GRUVAEGMM"
+    for m in models:
+        print(f" < * > {m} " * 20)
+        train(m)

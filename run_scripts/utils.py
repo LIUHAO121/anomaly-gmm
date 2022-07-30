@@ -17,7 +17,7 @@ def train_step(args,transformer_DL,train_np,test_np,test_with_label_df):
     res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
     
     model_path = os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
-    if args['model'] not in ['DAGMM']:
+    if args['model'] not in ['DAGMM',"lstmod", "LSTMAE", "telemanom"]:
         for primitive in transformer_DL.primitives:
             primitive._clf.model_.save(model_path,save_format="tf")
     
