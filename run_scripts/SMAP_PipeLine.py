@@ -446,7 +446,7 @@ def train(model):
 
 if __name__ == "__main__":
     # models = ["DAGMM","lstmod", "LSTMAE", "telemanom","deeplog", "LSTMVAEGMM"]
-    models = ["LSTMAEGMM","LSTMVAEDISTGMM","GRUVAEGMM"] 
+    models = ["LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"] 
     for m in models:
         print(f" < * > {m} " * 20)
         train(m)

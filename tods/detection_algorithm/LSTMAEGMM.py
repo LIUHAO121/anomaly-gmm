@@ -383,7 +383,7 @@ class LstmAEGMM(BaseDetector):
 
         return z_mean + K.exp(0.5 * z_log) * epsilon
 
-    def vae_loss(self, inputs, outputs,energy_out):
+    def vae_loss(self, inputs, outputs, z_mean, z_log,energy_out):
         """ Loss = Recreation loss + Kullback-Leibler loss
         for probability function divergence (ELBO).
         gamma > 1 and capacity != 0 for beta-VAE
@@ -391,8 +391,11 @@ class LstmAEGMM(BaseDetector):
 
         reconstruction_loss = self.loss(inputs, outputs)  # y_true [batch_size, d0, .. dN]. loss -> [batch_size, d0, .. dN-1]
         reconstruction_loss *= self.n_features_
+        kl_loss = 1 + z_log - K.square(z_mean) - K.exp(z_log)
+        kl_loss = -0.5 * K.sum(kl_loss, axis=-1)
+        kl_loss = self.gamma * K.abs(kl_loss - self.capacity)
         
-        return K.mean(reconstruction_loss) + 0.1 * K.mean(energy_out)
+        return K.mean(reconstruction_loss + kl_loss) + 0.1 * K.mean(energy_out)
 
 
     def energy(self, gamma_and_z):
@@ -412,20 +415,12 @@ class LstmAEGMM(BaseDetector):
         gamma_sum = tf.reduce_sum(gamma, axis=1) # (i,k)
         mu = tf.einsum('itk,itl->ikl',gamma,z) / gamma_sum[:,:,None]  # (i,k,l) 每个sample之间的mu和sigma都是独立的
         
-        # z_centered = tf.sqrt(gamma[:,:,:,None]) * (z[:,:,None,:] - mu[:,None, :, :]) # (i,t,k,l)
-        # sigma = tf.einsum('itkl,itkm->iklm',z_centered,z_centered) / gamma_sum[:,:,None,None] # (i,k,l,m) 
-        
         z_centered = z[:,:,None,:] - mu[:,None, :, :] # (i,t,k,l)
         z_centered_last = z_centered[:,-1,:,:]
         z_c_left = z_centered_last[:,:,None,:]
         z_c_right = z_centered_last[:,:,:,None]
         
-        # inverse_sigma = tf.linalg.inv(sigma)  # (i,k,l,m)
-        # matrix_matmul = tf.squeeze(tf.matmul(tf.matmul(z_c_left,inverse_sigma),z_c_right)) # (i,k)
-        # e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
-        # det_i_k = tf.sqrt(tf.math.abs((tf.linalg.det(2 * 3.1415 * sigma)))) # (i,k)
-        # e = tf.reduce_sum((e_i_k / det_i_k) * gamma[:,-1,:],axis=-1)
-        
+
         matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right))
         e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
         e = tf.reduce_sum((e_i_k) * gamma[:,-1,:],axis=-1)
@@ -455,10 +450,13 @@ class LstmAEGMM(BaseDetector):
                           activity_regularizer=l2(self.l2_regularizer))(layer)
             layer = Dropout(self.dropout_rate)(layer)
 
-        latent = Dense(self.latent_dim)(layer)
-
+        z_mean = Dense(self.latent_dim)(layer)
+        z_log = Dense(self.latent_dim)(layer)
+        # Use parametrisation sampling
+        z = Lambda(self.sampling, output_shape=(self.latent_dim,))(
+            [z_mean, z_log])
         
-        encoder = Model(inputs,latent)
+        encoder = Model(inputs, [z_mean, z_log, z])
         if self.verbose >= 1:
             encoder.summary()
 
@@ -479,7 +477,7 @@ class LstmAEGMM(BaseDetector):
             decoder.summary()
         
          # Generate outputs
-        outputs = decoder(encoder(inputs))
+        outputs = decoder(z)
         
         
         # estimate model
@@ -494,7 +492,7 @@ class LstmAEGMM(BaseDetector):
         if self.verbose >= 1:
             est_model.summary()
             
-        est_outputs = est_model(decoder(encoder(inputs)) - inputs) # gamma
+        est_outputs = est_model(outputs) # gamma
         
         # energy calculate
         energy_input1 = Input(shape=(None, self.num_gmm,), name="energy_input1")
@@ -506,7 +504,7 @@ class LstmAEGMM(BaseDetector):
         if self.verbose >= 1:
             energy_model.summary()
         
-        energy_out = energy_model([est_model(decoder(encoder(inputs))), decoder(encoder(inputs))])
+        energy_out = energy_model([est_outputs, outputs])
         
 
         # lstm vae gmm
@@ -514,7 +512,7 @@ class LstmAEGMM(BaseDetector):
         
         
         
-        lstmvaegmm.add_loss(self.vae_loss(inputs, outputs,energy_out))
+        lstmvaegmm.add_loss(self.vae_loss(inputs, outputs, z_mean, z_log, energy_out))
         lstmvaegmm.compile(optimizer=self.optimizer)
         if self.verbose >= 1:
             lstmvaegmm.summary()

@@ -485,7 +485,7 @@ class GRUVAEGMM(BaseDetector):
             decoder.summary()
         
          # Generate outputs
-        outputs = decoder(encoder(inputs)[2])
+        outputs = decoder(z)
         
         
         # estimate model
@@ -500,7 +500,7 @@ class GRUVAEGMM(BaseDetector):
         if self.verbose >= 1:
             est_model.summary()
             
-        est_outputs = est_model(decoder(encoder(inputs)[2]) - inputs) # gamma
+        est_outputs = est_model(outputs) # gamma
         
         # energy calculate
         energy_input1 = Input(shape=(None, self.num_gmm,), name="energy_input1")
@@ -512,7 +512,7 @@ class GRUVAEGMM(BaseDetector):
         if self.verbose >= 1:
             energy_model.summary()
         
-        energy_out = energy_model([est_model(decoder(encoder(inputs)[2])), decoder(encoder(inputs)[2])])
+        energy_out = energy_model([est_outputs, outputs])
         
 
         # lstm vae gmm

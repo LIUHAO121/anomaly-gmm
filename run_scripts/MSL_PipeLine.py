@@ -10,8 +10,6 @@ from tods.sk_interface.detection_algorithm.AutoEncoder_skinterface import AutoEn
 from tods.sk_interface.detection_algorithm.VariationalAutoEncoder_skinterface import VariationalAutoEncoderSKI
 from tods.sk_interface.detection_algorithm.LSTMAE_skinterface import LSTMAESKI
 from tods.sk_interface.detection_algorithm.DAGMM_skinterface import DAGMMSKI
-from tods.sk_interface.detection_algorithm.LSTMVAE_skinterface import LSTMVAESKI
-from tods.sk_interface.detection_algorithm.OCSVM_skinterface import OCSVMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAEGMM_skinterface import LSTMVAEGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAEDISTGMM_skinterface import LSTMVAEDISTGMMSKI
 from tods.sk_interface.detection_algorithm.GRUVAEGMM_skinterface import GRUVAEGMMSKI
@@ -306,7 +304,7 @@ lstmaegmm_args = {
     "latent_dim":2,
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "contamination":0.01,
-    "epochs": 2,
+    "epochs": 1,
     "dataset_dir":f'datasets/{dataset_name}',
     "dataset_name":dataset_name,
     "dataset_dim":dataset_dim,
@@ -336,7 +334,10 @@ def train(model):
     args = model2args[model]
     args['model_dir'] = "run_scripts/out/models"
     train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
-
+    train_np = train_np[:20000]
+    test_np = test_np[:20000]
+    test_with_label_df  = test_with_label_df[:20000]
+    
     
     model2ski = {
         "DAGMM":DAGMMSKI(
@@ -444,7 +445,7 @@ def train(model):
 
 if __name__ == "__main__":
     # models = ["DAGMM","lstmod", "LSTMAE", "telemanom","deeplog", "LSTMVAEGMM"]
-    models = ["GRUVAEGMM","LSTMAEGMM","LSTMVAEDISTGMM"]  # "GRUVAEGMM"
+    models = ["LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"]  # "GRUVAEGMM"
     for m in models:
         print(f" < * > {m} " * 20)
         train(m)

@@ -511,7 +511,7 @@ class LSTMVAEDISTGMM(BaseDetector):
             distance_model.summary()
         
          # Generate distance
-        dist_res = distance_model([inputs, decoder(encoder(inputs)[2]),encoder(inputs)[2]])
+        dist_res = distance_model([inputs, outputs, z])
         
         # estimate model
         est_input = Input(shape=(None,self.latent_dim+2,), name="est_input")
@@ -524,7 +524,7 @@ class LSTMVAEDISTGMM(BaseDetector):
         if self.verbose >= 1:
             est_model.summary()
             
-        est_outputs = est_model(distance_model([inputs, decoder(encoder(inputs)[2]),encoder(inputs)[2]])) # gamma
+        est_outputs = est_model(dist_res) # gamma
         
         # energy calculate
         energy_input1 = Input(shape=(None, self.num_gmm,), name="energy_input1")
@@ -536,7 +536,7 @@ class LSTMVAEDISTGMM(BaseDetector):
         if self.verbose >= 1:
             energy_model.summary()
         
-        energy_out = energy_model([est_model(distance_model([inputs,decoder(encoder(inputs)[2]),encoder(inputs)[2]])),distance_model([inputs,decoder(encoder(inputs)[2]),encoder(inputs)[2]])])
+        energy_out = energy_model([est_outputs,dist_res])
         
         # lstm vae gmm
         lstmvaegmm = Model(inputs, energy_out)
