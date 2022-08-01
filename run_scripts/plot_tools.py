@@ -120,14 +120,11 @@ def plot_after_train(args,df,predict):
     df 必须包括标注列
     """
     threshold =  np.percentile(predict, 100 * (1 - args['contamination']))
-    max_score = np.max(predict)
-    rescale_predict = predict / max_score
-    rescale_threshod = threshold / max_score
-    rescale_threshod_series = pd.Series([rescale_threshod for i in range(len(predict))])
+    threshod_series = pd.Series([threshold for i in range(len(predict))])
     for col in df.columns[:-1]:
         plot_predict(df, 
                      col_name=col,
                      anomal_col=args['anomal_col'], 
-                     predict=rescale_predict, 
-                     threshold=rescale_threshod_series,
+                     predict=predict, 
+                     threshold=threshod_series,
                      save_path=os.path.join(args['plot_dir'],args['dataset_name'],'{}_{}_{}_{}_predict.png'.format(args['dataset_name'],args['model'],args['sub_dataset'],col)))

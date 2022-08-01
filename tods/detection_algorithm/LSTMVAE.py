@@ -436,7 +436,7 @@ class LstmVAE(BaseDetector):
             decoder.summary()
         
          # Generate outputs
-        outputs = decoder(encoder(inputs)[2])
+        outputs = decoder(z)
 
         # Instantiate VAE
         vae = Model(inputs, outputs)

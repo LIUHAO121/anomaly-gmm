@@ -381,7 +381,8 @@ class LstmAEGMM(BaseDetector):
         dim = K.int_shape(z_mean)[2]  # latent dimension
         epsilon = K.random_normal(shape=(batch, timesteps, dim))  # mean=0, std=1.0
 
-        return z_mean + K.exp(0.5 * z_log) * epsilon
+        # return z_mean
+        return z_mean + K.exp(0.5 * z_log) * epsilon * 0.01
 
     def vae_loss(self, inputs, outputs, z_mean, z_log,energy_out):
         """ Loss = Recreation loss + Kullback-Leibler loss
@@ -395,7 +396,7 @@ class LstmAEGMM(BaseDetector):
         kl_loss = -0.5 * K.sum(kl_loss, axis=-1)
         kl_loss = self.gamma * K.abs(kl_loss - self.capacity)
         
-        return K.mean(reconstruction_loss + kl_loss) + 0.1 * K.mean(energy_out)
+        return K.mean(reconstruction_loss + kl_loss) +  0.1 * K.mean(energy_out)
 
 
     def energy(self, gamma_and_z):
@@ -453,8 +454,7 @@ class LstmAEGMM(BaseDetector):
         z_mean = Dense(self.latent_dim)(layer)
         z_log = Dense(self.latent_dim)(layer)
         # Use parametrisation sampling
-        z = Lambda(self.sampling, output_shape=(self.latent_dim,))(
-            [z_mean, z_log])
+        z = Lambda(self.sampling, output_shape=(self.latent_dim,))([z_mean, z_log])
         
         encoder = Model(inputs, [z_mean, z_log, z])
         if self.verbose >= 1:
