@@ -13,6 +13,7 @@ from tods.sk_interface.detection_algorithm.LSTMVAEGMM_skinterface import LSTMVAE
 from tods.sk_interface.detection_algorithm.LSTMVAEDISTGMM_skinterface import LSTMVAEDISTGMMSKI
 from tods.sk_interface.detection_algorithm.GRUVAEGMM_skinterface import GRUVAEGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMAEGMM_skinterface import LSTMAEGMMSKI
+from tods.sk_interface.detection_algorithm.LSTMGMM_skinterface import LSTMGMMSKI
 from run_scripts.metric_tools import multi_threshold_eval
 from run_scripts.plot_tools import plot_after_train
 
@@ -288,6 +289,29 @@ lstmaegmm_args = {
     "sub_dataset":"null"
 }
 
+
+lstmgmm_args = {
+    "model":"LSTMGMM",
+    "num_gmm":4,
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":64,
+    "hidden_size":64,
+    "contaminations":[0.0001 * i for i in range(0,500,10)],
+    "contamination":0.01,
+    "epochs": 1,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+
 def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
     model2args = {
         "DAGMM":dagmm_args,
@@ -299,7 +323,8 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
         "LSTMVAEGMM": lstmvaegmm_args,
         "LSTMVAEDISTGMM":lstmvaedistgmm_args,
         "GRUVAEGMM": gruvaegmm_args,
-        "LSTMAEGMM": lstmaegmm_args
+        "LSTMAEGMM": lstmaegmm_args,
+        "LSTMGMM":lstmgmm_args
     }
     args = model2args[model]
     args['model_dir'] = "run_scripts/out/models"
@@ -408,6 +433,14 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
             latent_dim = model2args["LSTMAEGMM"]["latent_dim"],
             encoder_neurons = model2args["LSTMAEGMM"]["encoder_neurons"],
             decoder_neurons = model2args["LSTMAEGMM"]["decoder_neurons"]
+        ),
+        "LSTMGMM":LSTMGMMSKI(
+            num_gmm = model2args["LSTMAEGMM"]["num_gmm"],
+            window_size=model2args["LSTMAEGMM"]['window_size'],
+            hidden_size = model2args["LSTMAEGMM"]['hidden_size'],
+            preprocessing = model2args["LSTMAEGMM"]["preprocessing"],
+            batch_size = model2args["LSTMAEGMM"]["batch_size"],
+            epochs = model2args["LSTMAEGMM"]["epochs"]
         )
     }
     

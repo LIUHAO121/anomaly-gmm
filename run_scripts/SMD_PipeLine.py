@@ -117,7 +117,8 @@ def prepare_data(args,machine_name):
  
 
 if __name__ == "__main__":
-    models = ["LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"]
+    # models = ["LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"]
+    models = ["lstmod","deeplog"]
     for m in models:
         for mn in machine_names:
             train(model=m,dataset_name=dataset_name,dataset_dim=dataset_dim,prepare_data=prepare_data,machine_name=mn)

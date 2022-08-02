@@ -91,7 +91,8 @@ def prepare_data(args):
 
 
 if __name__ == "__main__":
-    models = ["DAGMM", "lstmod", "LSTMAE", "LSTMVAE", "telemanom", "deeplog", "LSTMVAEGMM", "LSTMAEGMM", "GRUVAEGMM", "LSTMVAEDISTGMM"]
+    # models = ["DAGMM", "lstmod", "LSTMAE", "LSTMVAE", "telemanom", "deeplog", "LSTMVAEGMM", "LSTMAEGMM", "GRUVAEGMM", "LSTMVAEDISTGMM"]
+    models = ["LSTMGMM"]
     for m in models:
         print(f" < * > {m} " * 20)
         train(
