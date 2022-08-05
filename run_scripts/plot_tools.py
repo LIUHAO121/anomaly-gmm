@@ -38,7 +38,7 @@ def plot_predict(df,col_name,anomal_col,predict,threshold,save_path):
     fig=plt.figure(facecolor='white',figsize=(45,20))
     ax1 = fig.add_subplot(211)
     ax1.plot(df[col_name], color='black', label = 'Normal', linewidth = 1.5)
-    ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s = 10)
+    ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s = 15)
     plt.legend()
     ax2 = fig.add_subplot(212)
     ax2.plot(predict, color='blue', label = 'Score', linewidth = 0.5)
@@ -121,7 +121,7 @@ def plot_after_train(args,df,predict):
     """
     threshold =  np.percentile(predict, 100 * (1 - args['contamination']))
     threshod_series = pd.Series([threshold for i in range(len(predict))])
-    for col in df.columns[:-1]:
+    for col in df.columns[:-1][:1]:
         plot_predict(df, 
                      col_name=col,
                      anomal_col=args['anomal_col'], 

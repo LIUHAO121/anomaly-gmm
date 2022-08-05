@@ -555,7 +555,7 @@ class LstmGMM(BaseDetector):
             The anomaly score of the input samples.
         """
         # check_is_fitted(self, ['model_', 'history_'])
-        loaded_model = tf.keras.models.load_model(model_path,custom_objects={'energy': self.energy,'sampling':self.sampling})
+        loaded_model = tf.keras.models.load_model(model_path,custom_objects={'energy': self.energy})
         X = check_array(X)
         #print("inside")
         #print(X.shape)

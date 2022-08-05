@@ -29,16 +29,18 @@ def train_step(args,transformer_DL,train_np,test_np,test_with_label_df):
     y_score = pd.Series(prediction_score_DL.flatten())
     res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
     
-    # model_path = os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
-    # if args['model'] not in ['DAGMM',"lstmod", "LSTMAE", "telemanom"]:
-    #     for primitive in transformer_DL.primitives:
-    #         primitive._clf.model_.save(model_path,save_format="tf")
+    model_path = os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
+    if args['model'] not in ['DAGMM',"lstmod", "LSTMAE", "telemanom"]:
+        for primitive in transformer_DL.primitives:
+            primitive._clf.model_.save(model_path,save_format="tf")
     
-    # plot_after_train(
-    #             args,
-    #             df=test_with_label_df,
-    #             predict=y_score
-    #                  )
+    best_f1_index = res['f1'].index(max(res['f1']))
+    args['contamination'] = res['contamination'][best_f1_index]
+    plot_after_train(
+                args,
+                df=test_with_label_df,
+                predict=y_score
+                     )
     
     
 def eval_step(args,transformer_DL,test_np,test_with_label_df):
@@ -222,14 +224,14 @@ lstmvaedistgmm_args = {
     "num_gmm":4,
     "preprocessing":False,
     "window_size":100, 
-    "batch_size":64,
-    "hidden_size":64,
+    "batch_size":128,
+    "hidden_size":32,
     "encoder_neurons":[32,16],
     "decoder_neurons":[16,32],
     "latent_dim":2,
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "contamination":0.01,
-    "epochs": 2,
+    "epochs": 1,
     "anomal_col":"anomaly",
     "plot":False,
     "plot_dir": "run_scripts/out/imgs",
@@ -312,6 +314,14 @@ lstmgmm_args = {
 }
 
 
+vis_start_end = {
+    "MSL":{"start":25000,"end":30000},
+    "SMAP":{"start":365000,"end":370000},
+    "PSM":{"start":2000,"end":7800},
+    "SMD":{"start":0,"end":120000},
+    "SYN":{"start":0,"end":120000},
+}
+
 def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
     model2args = {
         "DAGMM":dagmm_args,
@@ -341,6 +351,10 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
         args['sub_dataset'] = machine_name
     else:
         train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
+        
+    dataset_name = args["dataset_name"]
+    test_np = test_np[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
+    test_with_label_df = test_with_label_df[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
 
     model2ski = {
         "DAGMM":DAGMMSKI(

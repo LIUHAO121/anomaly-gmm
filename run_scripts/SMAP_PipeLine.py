@@ -99,7 +99,8 @@ if __name__ == "__main__":
     # models = ["DAGMM","lstmod", "LSTMAE", "telemanom","deeplog", "LSTMVAEGMM"]
     # models = ["LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"] 
     # models = ["LSTMVAE"]
-    models = ["LSTMGMM"]
+    models = ["deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM", "LSTMGMM"]
+    # models = ["LSTMGMM"]
     for m in models:
         print(f" < * > {m} " * 20)
         train(
