@@ -37,7 +37,10 @@ from pytz import timezone
 import numpy as np
 import pandas as pd
 import os
+import pickle
+
 from run_scripts.plot_tools import plot_anomal_multi_columns,plot_anomal_multi_columns_3d,plot_multi_columns,plot_one_column_with_label,plot_predict, plot_after_train,plot_before_train
+from run_scripts.metric_tools import calc_point2point, adjust_predicts,multi_threshold_eval
 from run_scripts.utils import train_step,eval_step,train
 
 import tensorflow as tf
@@ -45,42 +48,43 @@ gpu_devices = tf.config.experimental.list_physical_devices('GPU')
 for device in gpu_devices:
     tf.config.experimental.set_memory_growth(device, True)
       
-dataset_name = "PSM"
-dataset_dim = 25
+dataset_name = "SWaT"
+dataset_dim = 51
+
+
 
 def prepare_data(args):
-    args['model_dir'] = "run_scripts/out/models"
     # path
     dataset_dir = args['dataset_dir']
-    train_data_path = os.path.join(dataset_dir,"train.csv") 
-    test_data_path = os.path.join(dataset_dir,"test.csv") 
-    test_label_path = os.path.join(dataset_dir,"test_label.csv") 
+    train_data_path = os.path.join(dataset_dir,"SWaT_train.pkl") 
+    test_data_path = os.path.join(dataset_dir,"SWaT_test.pkl") 
+    test_label_path = os.path.join(dataset_dir,"SWaT_test_label.pkl") 
     # read
-    train_df=pd.read_csv(train_data_path)
-    test_df=pd.read_csv(test_data_path)
-    test_label_df=pd.read_csv(test_label_path)
+    train_data=pickle.load(open(train_data_path,'rb'))
+    test_data=pickle.load(open(test_data_path,'rb'))
+    test_label=pickle.load(open(test_label_path,'rb'))
     
-    train_np = train_df.values[:,1:] # (n,25)
-    test_np = test_df.values[:,1:]  # (n,25)
-    test_label_np = test_label_df.values[:,1:]  # (n,1)
     
-    train_np = np.nan_to_num(train_np)
-    test_np = np.nan_to_num(test_np)
-    test_label_np = np.nan_to_num(test_label_np)
+    # convert to dataframe
+    columns = [str(i+1) for i in range(args['dataset_dim'])]
+    train_df = pd.DataFrame(train_data,columns=columns)
+    test_df = pd.DataFrame(test_data,columns=columns) 
+    if args['use_important_cols']:
+        train_df = train_df.loc[:,args['important_cols']]
+        test_df = test_df.loc[:,args['important_cols']]
     
     # normalize
     scaler = StandardScaler()
-    train_np = scaler.fit_transform(train_np)
-    test_np = scaler.transform(test_np)
-
+    train_np = scaler.fit_transform(train_df)
+    test_np = scaler.transform(test_df)
+    
     # test_with_label
     columns = [str(i+1) for i in range(args['dataset_dim'])]
-    
-    test_with_label_df = pd.DataFrame(np.concatenate([test_np,test_label_np],axis=1))
+    test_with_label = np.concatenate([test_np, test_label.reshape(-1,1)], axis=1)
+    test_with_label_df = pd.DataFrame(test_with_label)
     columns.append(args['anomal_col']) # inplace
     test_with_label_df.columns = columns
-    test_with_label_df[args['anomal_col']] = test_with_label_df[args['anomal_col']].astype(int)    
-
+    test_with_label_df[args['anomal_col']] = test_with_label_df[args['anomal_col']].astype(int)
     
     # plot 
     if args["plot"]:
@@ -90,8 +94,11 @@ def prepare_data(args):
 
 
 
+
 if __name__ == "__main__":
-    # models = ["DAGMM", "lstmod", "LSTMAE", "LSTMVAE", "telemanom", "deeplog", "LSTMVAEGMM", "LSTMAEGMM", "GRUVAEGMM", "LSTMVAEDISTGMM"]
+    # models = ["DAGMM","lstmod", "LSTMAE", "telemanom","deeplog", "LSTMVAEGMM"]
+    # models = ["LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"] 
+    # models = ["LSTMVAE"]
     # models = ["deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM", "LSTMGMM"]
     models = ["LSTMVAEGMM"]
     for m in models:

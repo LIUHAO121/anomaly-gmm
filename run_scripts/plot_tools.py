@@ -35,15 +35,15 @@ def plot_one_column_dense(df,col_name,save_path):
 def plot_predict(df,col_name,anomal_col,predict,threshold,save_path):
     a = df.loc[df[anomal_col] == 1]
 
-    fig=plt.figure(facecolor='white',figsize=(45,20))
+    fig=plt.figure(facecolor='white',figsize=(35,20))
     ax1 = fig.add_subplot(211)
     ax1.plot(df[col_name], color='black', label = 'Normal', linewidth = 1.5)
-    ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s = 15)
-    plt.legend()
+    ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s = 20)
+    plt.legend(fontsize=25)
     ax2 = fig.add_subplot(212)
     ax2.plot(predict, color='blue', label = 'Score', linewidth = 0.5)
     ax2.plot(threshold, color='green', label = 'threshold', linewidth = 1.5)
-    plt.legend()
+    plt.legend(fontsize=25)
     plt.savefig(save_path)
     plt.close('all')
     print("save picture {} ...".format(save_path))

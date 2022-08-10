@@ -101,7 +101,7 @@ def merge_smd_metric(metric_dir,model):
         
         
 def merge_all_metric(metric_dir,models):
-    datasets = ['MSL','SMAP','PSM','SMD','SYN']
+    datasets = ['MSL','SMAP','PSM']
     res = {'contamination':[],'precision':[],'recall':[],'f1':[]}
     for d in datasets:
         res = {'models':[],'contamination':[],'precision':[],'recall':[],'f1':[]}

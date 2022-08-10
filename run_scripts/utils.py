@@ -14,6 +14,7 @@ from tods.sk_interface.detection_algorithm.LSTMVAEDISTGMM_skinterface import LST
 from tods.sk_interface.detection_algorithm.GRUVAEGMM_skinterface import GRUVAEGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMAEGMM_skinterface import LSTMAEGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMGMM_skinterface import LSTMGMMSKI
+from tods.sk_interface.detection_algorithm.LSTMVAEGMM2_skinterface import LSTMVAEGMM2SKI
 from run_scripts.metric_tools import multi_threshold_eval
 from run_scripts.plot_tools import plot_after_train
 
@@ -207,7 +208,7 @@ lstmvaegmm_args = {
     "latent_dim":2,
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "contamination":0.01,
-    "epochs": 2,
+    "epochs": 1,
     "anomal_col":"anomaly",
     "plot":False,
     "plot_dir": "run_scripts/out/imgs",
@@ -253,7 +254,7 @@ gruvaegmm_args = {
     "encoder_neurons":[64,32,16],
     "decoder_neurons":[16,32,64],
     "latent_dim":2,
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contaminations":[0.001, 0.005,0.007, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "contamination":0.01,
     "epochs": 2,
     "anomal_col":"anomaly",
@@ -313,13 +314,38 @@ lstmgmm_args = {
     "sub_dataset":"null"
 }
 
+lstmvaegmm2_args = {
+    "model":"LSTMVAEGMM2",
+    "num_gmm":4,
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":64,
+    "hidden_size":64,
+    "encoder_neurons":[64,32,16],
+    "decoder_neurons":[16,32,64],
+    "latent_dim":2,
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination":0.01,
+    "epochs": 6,
+    "anomal_col":"anomaly",
+    "plot":False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
 
 vis_start_end = {
-    "MSL":{"start":25000,"end":30000},
+    "MSL":{"start":21100,"end":21500},
     "SMAP":{"start":365000,"end":370000},
     "PSM":{"start":2000,"end":7800},
     "SMD":{"start":0,"end":120000},
     "SYN":{"start":0,"end":120000},
+    "SWaT":{"start":0,"end":50000}
 }
 
 def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
@@ -334,7 +360,8 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
         "LSTMVAEDISTGMM":lstmvaedistgmm_args,
         "GRUVAEGMM": gruvaegmm_args,
         "LSTMAEGMM": lstmaegmm_args,
-        "LSTMGMM":lstmgmm_args
+        "LSTMGMM":lstmgmm_args,
+        "LSTMVAEGMM2":lstmvaegmm2_args
     }
     args = model2args[model]
     args['model_dir'] = "run_scripts/out/models"
@@ -353,8 +380,8 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
         train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
         
     dataset_name = args["dataset_name"]
-    test_np = test_np[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
-    test_with_label_df = test_with_label_df[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
+    # test_np = test_np[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
+    # test_with_label_df = test_with_label_df[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
 
     model2ski = {
         "DAGMM":DAGMMSKI(
@@ -455,6 +482,17 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
             preprocessing = model2args["LSTMAEGMM"]["preprocessing"],
             batch_size = model2args["LSTMAEGMM"]["batch_size"],
             epochs = model2args["LSTMAEGMM"]["epochs"]
+        ),
+        "LSTMVAEGMM2":LSTMVAEGMM2SKI(
+            num_gmm = model2args["LSTMVAEGMM2"]["num_gmm"],
+            window_size=model2args["LSTMVAEGMM2"]['window_size'],
+            hidden_size = model2args["LSTMVAEGMM2"]['hidden_size'],
+            preprocessing = model2args["LSTMVAEGMM2"]["preprocessing"],
+            batch_size = model2args["LSTMVAEGMM2"]["batch_size"],
+            epochs = model2args["LSTMVAEGMM2"]["epochs"],
+            latent_dim = model2args["LSTMVAEGMM2"]["latent_dim"],
+            encoder_neurons = model2args["LSTMVAEGMM2"]["encoder_neurons"],
+            decoder_neurons = model2args["LSTMVAEGMM2"]["decoder_neurons"]
         )
     }
     
