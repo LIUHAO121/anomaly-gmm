@@ -208,7 +208,7 @@ lstmvaegmm_args = {
     # "latent_dim":2,
     "encoder_neurons":[],
     "decoder_neurons":[],
-    "latent_dim":2,
+    "latent_dim":16,
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "contamination": 0.01,
     "epochs": 1,
