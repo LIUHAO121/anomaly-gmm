@@ -1,3 +1,4 @@
+from genericpath import exists
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -122,6 +123,7 @@ def plot_after_train(args,df,predict):
     threshold =  np.percentile(predict, 100 * (1 - args['contamination']))
     threshod_series = pd.Series([threshold for i in range(len(predict))])
     for col in df.columns[:-1][:1]:
+        os.makedirs(os.path.join(args['plot_dir'],args['dataset_name']),exist_ok=True)
         plot_predict(df, 
                      col_name=col,
                      anomal_col=args['anomal_col'], 
