@@ -74,6 +74,7 @@ def multi_threshold_eval(args,pred_score,label):
         res['f1'].append(round(f1, 4))
     res_df = pd.DataFrame(res)
     print(res_df)
+    os.makedirs(args['metrics_dir'],exist_ok=True)
     res_df.to_csv(os.path.join(args['metrics_dir'],"{}_{}_{}.csv".format(args['dataset_name'], args['model'], args['sub_dataset'])))
     return res
 
