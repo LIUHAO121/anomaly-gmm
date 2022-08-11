@@ -123,11 +123,12 @@ def merge_all_metric(metric_dir,models):
 if __name__ == "__main__":
 
     metric_dir = "run_scripts/out/metric"
-    models = [ "DAGMM", "lstmod", "LSTMAE","LSTMVAE",  "telemanom", "deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM","LSTMGMM"]
+    # models = [ "DAGMM", "lstmod", "LSTMAE","LSTMVAE",  "telemanom", "deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM","LSTMGMM"]
+    models = ["LSTMVAEGMM"]
     
-    # for m in models:
-    #     merge_smd_metric(metric_dir=metric_dir,model=m)
+    for m in models:
+        merge_smd_metric(metric_dir=metric_dir,model=m)
     
     
-    merge_all_metric(metric_dir=metric_dir,models=models)
+    # merge_all_metric(metric_dir=metric_dir,models=models)
                                 

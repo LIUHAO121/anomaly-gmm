@@ -58,7 +58,7 @@ machine_names = ["machine-1-1", "machine-1-2","machine-1-3", "machine-1-4",  "ma
                 "machine-3-1",  "machine-3-2",  "machine-3-3",  "machine-3-4", "machine-3-5",  "machine-3-6","machine-3-7",  "machine-3-8",   "machine-3-9", "machine-3-10","machine-3-11"]
 
 
-# machine_names = ["machine-1-2","machine-1-3","machine-1-4",  "machine-1-5", "machine-1-6",  "machine-1-7"]
+# machine_names = ["machine-1-8","machine-1-2","machine-1-3","machine-1-4",  "machine-1-5"]
 
 
 
