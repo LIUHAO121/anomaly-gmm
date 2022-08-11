@@ -93,8 +93,6 @@ def prepare_data(args):
     return train_np, test_np, test_with_label_df 
 
 
-
-
 if __name__ == "__main__":
     # models = ["DAGMM","lstmod", "LSTMAE", "telemanom","deeplog", "LSTMVAEGMM"]
     # models = ["LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"] 
