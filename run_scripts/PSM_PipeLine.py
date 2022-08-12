@@ -84,7 +84,7 @@ def prepare_data(args):
     
     # plot 
     if args["plot"]:
-        plot_before_train(args, df=test_with_label_df)
+        plot_before_train(args, df=test_with_label_df[:20000])
     
     return train_np, test_np, test_with_label_df 
 

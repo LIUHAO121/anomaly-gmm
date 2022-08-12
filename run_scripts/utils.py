@@ -205,7 +205,7 @@ lstmvaegmm_args = {
     "hidden_size":64,
     "encoder_neurons":[64,32,16],
     "decoder_neurons":[16,32,64],
-    "latent_dim":2,
+    "latent_dim":12,
     # "encoder_neurons":[],
     # "decoder_neurons":[],
     # "latent_dim":16,

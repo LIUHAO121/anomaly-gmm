@@ -87,8 +87,8 @@ def prepare_data(args):
     test_with_label_df[args['anomal_col']] = test_with_label_df[args['anomal_col']].astype(int)
     
     # plot 
-    if args["plot"]:
-        plot_before_train(args, df=test_with_label_df)
+    # if args["plot"]:
+    plot_before_train(args, df=test_with_label_df[:20000])
     
     return train_np, test_np, test_with_label_df 
 
