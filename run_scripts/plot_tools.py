@@ -101,6 +101,7 @@ def plot_before_train(args, df):
     """
     df 必须包括标注列
     """
+    os.makedirs(os.path.join(args['plot_dir'],args['dataset_name']),exist_ok=True)
     for col in df.columns[:-1]:
         plot_one_column_with_label(
             df=df,

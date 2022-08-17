@@ -87,8 +87,8 @@ def prepare_data(args):
     test_with_label_df[args['anomal_col']] = test_with_label_df[args['anomal_col']].astype(int)
     
     # plot 
-    # if args["plot"]:
-    plot_before_train(args, df=test_with_label_df[:20000])
+    if args["plot"]:
+        plot_before_train(args, df=test_with_label_df[:20000])
     
     return train_np, test_np, test_with_label_df 
 
@@ -102,6 +102,7 @@ if __name__ == "__main__":
     # models = ["LSTMVAE"]
     models = ["LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM", "LSTMGMM"]
     # models = ["telemanom"]
+    
     for m in models:
         print(f" < * > {m} " * 20)
         train(
