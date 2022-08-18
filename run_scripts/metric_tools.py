@@ -83,6 +83,8 @@ def merge_smd_metric(metric_dir,model):
     columns = ['contamination', 'thresholds', 'precision', 'recall', 'f1']
     dataset = "SMD"
     metric_files = glob(f"{metric_dir}/{dataset}_{model}_machine*.csv")
+    print("metric_files ...")
+    print(metric_files)
     res = {'contamination':[],"thresholds":[],'precision':[],'recall':[],'f1':[]}
     df_list = []
     
@@ -90,6 +92,7 @@ def merge_smd_metric(metric_dir,model):
         metric_df = pd.read_csv(f)
         df_list.append(metric_df)
     df_num = len(df_list)
+    assert df_num >1 , f"find no csv files file_num = {df_num} "
     for col in columns:
         value_series = pd.Series([0.0 for i in range(len(df_list[0]['contamination']))])
         for df in df_list:
