@@ -83,8 +83,6 @@ def merge_smd_metric(metric_dir,model):
     columns = ['contamination', 'thresholds', 'precision', 'recall', 'f1']
     dataset = "SMD"
     metric_files = glob(f"{metric_dir}/{dataset}_{model}_machine*.csv")
-    print("metric_files ...")
-    print(metric_files)
     res = {'contamination':[],"thresholds":[],'precision':[],'recall':[],'f1':[]}
     df_list = []
     
@@ -128,7 +126,7 @@ if __name__ == "__main__":
 
     metric_dir = "run_scripts/out/metric"
     # models = [ "DAGMM", "lstmod", "LSTMAE","LSTMVAE",  "telemanom", "deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM","LSTMGMM"]
-    models = ["LSTMVAEGMM"]
+    models = ["LSTMVAEDISTGMM"]
     
     for m in models:
         merge_smd_metric(metric_dir=metric_dir,model=m)
