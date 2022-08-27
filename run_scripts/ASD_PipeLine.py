@@ -53,12 +53,9 @@ for device in gpu_devices:
     
 
     
-machine_names = ["machine-1-1", "machine-1-2","machine-1-3", "machine-1-4",  "machine-1-5","machine-1-6",  "machine-1-7", "machine-1-8", 
-                 "machine-2-1",  "machine-2-2", "machine-2-3",  "machine-2-4","machine-2-5", "machine-2-6", "machine-2-7",    "machine-2-8",  "machine-2-9", 
-                "machine-3-1",  "machine-3-2",  "machine-3-3",  "machine-3-4", "machine-3-5",  "machine-3-6","machine-3-7",  "machine-3-8",   "machine-3-9", "machine-3-10","machine-3-11"]
+machine_names = ["omi-1", "omi-2","omi-3","omi-4","omi-5","omi-6","omi-7","omi-8","omi-9","omi-10","omi-11","omi-12"]
 
 
-# machine_names = ["machine-1-8","machine-1-2","machine-1-3","machine-1-4",  "machine-1-5"]
 
 
 
@@ -68,8 +65,8 @@ test_suffix = "_test.pkl"
 test_label_suffix = "_test_label.pkl"
 
 
-dataset_name = "SMD"
-dataset_dim = 38
+dataset_name = "ASD"
+dataset_dim = 19
 
 def prepare_data(args,machine_name):
     # path
@@ -119,7 +116,7 @@ def prepare_data(args,machine_name):
 if __name__ == "__main__":
     # models = ["LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"]
     # models = ["DAGMM","LSTMAE","LSTMVAE", "telemanom"]
-    models = ["LSTMVAEGMM2"]
+    models = ["LSTMVAEGMM"]
     for m in models:
         for mn in machine_names:
             train(model=m,dataset_name=dataset_name,dataset_dim=dataset_dim,prepare_data=prepare_data,machine_name=mn)

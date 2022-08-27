@@ -59,9 +59,7 @@ def plot_multi_columns(df,col_names,save_path):
         plt.plot(df[col_name], label=col_name)
     plt.legend(col_names,title='multi columns')
     plt.savefig(save_path)
-    
-
-    
+     
     
 def plot_anomal_multi_columns(df, col_names, anomal_col,save_path):
     a = df.loc[df[anomal_col] == 1]
@@ -131,3 +129,46 @@ def plot_after_train(args,df,predict):
                      predict=predict, 
                      threshold=threshod_series,
                      save_path=os.path.join(args['plot_dir'],args['dataset_name'],'{}_{}_{}_{}_predict.png'.format(args['dataset_name'],args['model'],args['sub_dataset'],col)))
+
+
+def diffience(series,window=1):
+    series_cp = series.copy()
+    s_len = len(series_cp)
+    for j in range(window):
+        series_cp[0]=0.0
+    for i in range(window,s_len):
+        series_cp[i] = abs(series[i] - series[i-window:i].mean())
+    return series_cp 
+        
+
+def plot_generate():
+    anomaly_types = ["point_global","point_contextual","collective_global","collective_seasonal","collective_trend"]
+    plt.figure(figsize=(15, 8))
+    for index,anomaly_type in enumerate(anomaly_types):
+        data_dir = "datasets/SYN"
+        path=os.path.join(data_dir,anomaly_type + ".csv")
+        df=pd.read_csv(path)
+        anomal_col = "anomaly"
+        value_col = "col_0"
+        a = df.loc[df[anomal_col] == 1]
+        
+        plt.subplot(2,5,index+1)
+        plt.plot(df[value_col],color='black', label = 'Normal', linewidth = 1)
+        plt.scatter(x=a.index,y=a[value_col],color='red', label = 'Anomaly', s = 10)
+        title = " ".join(anomaly_type.split("_"))
+        plt.title(title)
+        
+        plt.legend(fontsize=1)
+        plt.subplot(2,5,index+6)
+        plt.plot(diffience(df[value_col],window=1),color='blue', linewidth = 1)
+    plt.subplot(2,5,1)
+    plt.ylabel("time series")
+    plt.subplot(2,5,6)
+    plt.ylabel("difference")
+    
+    plt.savefig(f"difference.png")
+    
+    
+if __name__ == "__main__":
+    plot_generate()
+   
