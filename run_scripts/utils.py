@@ -200,7 +200,7 @@ lstmvaegmm_args = {
     "model":"LSTMVAEGMM",
     "num_gmm":4,
     "preprocessing":False,
-    "window_size":100, 
+    "window_size":10, 
     "batch_size":64,
     "hidden_size":64,
     "encoder_neurons":[64,32,16],

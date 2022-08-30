@@ -153,8 +153,8 @@ def plot_generate():
         a = df.loc[df[anomal_col] == 1]
         
         plt.subplot(2,5,index+1)
-        plt.plot(df[value_col],color='black', label = 'Normal', linewidth = 1)
-        plt.scatter(x=a.index,y=a[value_col],color='red', label = 'Anomaly', s = 10)
+        plt.plot(df[value_col],color='black', linewidth = 1)
+        plt.scatter(x=a.index,y=a[value_col],color='red', s = 10)
         title = " ".join(anomaly_type.split("_"))
         plt.title(title)
         
@@ -166,7 +166,7 @@ def plot_generate():
     plt.subplot(2,5,6)
     plt.ylabel("difference")
     
-    plt.savefig(f"difference.png")
+    plt.savefig("difference.png")
     
     
 if __name__ == "__main__":

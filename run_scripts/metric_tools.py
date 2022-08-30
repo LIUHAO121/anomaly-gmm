@@ -91,14 +91,22 @@ def merge_smd_metric(metric_dir,model):
         df_list.append(metric_df)
     df_num = len(df_list)
     assert df_num >1 , f"find no csv files file_num = {df_num} "
-    for col in columns:
-        value_series = pd.Series([0.0 for i in range(len(df_list[0]['contamination']))])
-        for df in df_list:
-            value_series += df[col]
-        value_series /= df_num
-        res[col] = list(value_series)
-        res[col] = [round(i,4) for i in res[col]]
+    for df in df_list:
+        best_f1_df = df[df['f1']==df['f1'].max()]
+        res['contamination'].append(best_f1_df['contamination'].tolist()[0])
+        res['precision'].append(best_f1_df['precision'].tolist()[0])        
+        res['recall'].append(best_f1_df['recall'].tolist()[0])  
+        res['f1'].append(best_f1_df['f1'].tolist()[0]) 
+        res['thresholds'].append(best_f1_df['thresholds'].tolist()[0]) 
+        
+    res['contamination'] = [round(sum(res['contamination'])/len(res['contamination']),4)]
+    res['precision'] = [round(sum(res['precision'])/len(res['precision']),4)]
+    res['recall'] = [round(sum(res['recall'])/len(res['recall']),4)]
+    res['f1'] = [round(sum(res['f1'])/len(res['f1']),4)]
+    res['thresholds'] = [round(sum(res['thresholds'])/len(res['thresholds']),4)]
+    
     res_df = pd.DataFrame(res)
+    
     res_df.to_csv(f"{metric_dir}/{dataset}_{model}_null.csv")
         
         
