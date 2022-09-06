@@ -367,7 +367,7 @@ lstmvaegmm_args = {
 vis_start_end = {
     "MSL":{"start":21000,"end":22200},
     "SMAP":{"start":365000,"end":370000},
-    "PSM":{"start":0,"end":10000},
+    "PSM":{"start":7000,"end":8200},
     "SMD":{"start":0,"end":120000},
     "SYN":{"start":0,"end":120000},
     "SWaT":{"start":0,"end":50000}
@@ -405,8 +405,8 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
         train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
         
     dataset_name = args["dataset_name"]
-    test_np = test_np[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
-    test_with_label_df = test_with_label_df[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
+    # test_np = test_np[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
+    # test_with_label_df = test_with_label_df[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
 
     model2ski = {
         "DAGMM":DAGMMSKI(
