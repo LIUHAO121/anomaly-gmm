@@ -265,7 +265,6 @@ class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Param
                             hidden_activation = hyperparams['hidden_activation'],
                             gamma=hyperparams['gamma'],
                             capacity=hyperparams['capacity'],
-                            num_gmm=hyperparams['num_gmm'],
                             lamta=hyperparams['lamta'],
                                 )
         
