@@ -171,6 +171,11 @@ class Hyperparams(Hyperparams_ODBase):
         description="the number of gmm"
     )
     
+    lamta = hyperparams.Hyperparameter[float](
+        default=0.1,
+        semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        description="the number of gmm"
+    )
     
     hidden_activation = hyperparams.Enumeration[str](
         values=['relu', 'sigmoid', 'softmax', 'softplus', 'softsign',
@@ -220,7 +225,7 @@ class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Param
             'contact': 'mailto:khlai037@tamu.edu',
         },
         'hyperparams_to_tune': ['hidden_size','hidden_activation', 'loss', 'optimizer', 'epochs', 'batch_size',
-                                'l2_regularizer', 'validation_size', 'num_gmm',
+                                'l2_regularizer', 'validation_size', 'num_gmm','lamta',
                                 'window_size', 'features', 'stacked_layers', 'preprocessing', 'verbose', 'dropout_rate','contamination'],
         'version': '0.0.1', 
         'algorithm_types': [
@@ -259,7 +264,9 @@ class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Param
                             contamination=hyperparams['contamination'],
                             hidden_activation = hyperparams['hidden_activation'],
                             gamma=hyperparams['gamma'],
-                            capacity=hyperparams['capacity']
+                            capacity=hyperparams['capacity'],
+                            num_gmm=hyperparams['num_gmm'],
+                            lamta=hyperparams['lamta'],
                                 )
         
 
@@ -330,7 +337,7 @@ class LstmVAEGMM(BaseDetector):
                  l2_regularizer : float =0.1, validation_size : float =0.1, encoder_neurons=None, decoder_neurons=None,
                  latent_dim=2, hidden_activation='relu',
                  output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0, num_gmm:int=4,
-                 window_size: int = 1, stacked_layers: int  = 1, verbose : int = 1, contamination:int = 0.001):
+                 window_size: int = 1, stacked_layers: int  = 1, verbose : int = 1, contamination:int = 0.001,lamta: float=0.1):
 
         super(LstmVAEGMM, self).__init__(contamination=contamination)
         
@@ -356,6 +363,7 @@ class LstmVAEGMM(BaseDetector):
         self.gamma = gamma
         self.capacity = capacity
         self.num_gmm = num_gmm
+        self.lamta = lamta
         
 
 
@@ -395,7 +403,7 @@ class LstmVAEGMM(BaseDetector):
         kl_loss = -0.5 * K.sum(kl_loss, axis=-1)
         kl_loss = self.gamma * K.abs(kl_loss - self.capacity)
         
-        return K.mean(reconstruction_loss + kl_loss) + 0.1 * K.mean(energy_out)
+        return K.mean(reconstruction_loss + kl_loss) + self.lamta * K.mean(energy_out)
 
 
     def energy(self, gamma_and_z):
@@ -477,7 +485,8 @@ class LstmVAEGMM(BaseDetector):
             layer = Dropout(self.dropout_rate)(layer)
             
         # Output layer
-        outputs = Dense(self.n_features_, activation=self.output_activation)(layer)
+        # outputs = Dense(self.n_features_, activation=self.output_activation)(layer)
+        outputs = LSTM(self.n_features_,return_sequences=True,dropout = self.dropout_rate)(layer)
         
         # Instatiate decoder
         decoder = Model(latent_inputs, outputs)

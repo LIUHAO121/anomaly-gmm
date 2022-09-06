@@ -1,6 +1,7 @@
 import os
 import tensorflow as tf
 import pandas as pd
+import numpy as np
 from tods.sk_interface.detection_algorithm.Telemanom_skinterface import TelemanomSKI
 from tods.sk_interface.detection_algorithm.DeepLog_skinterface import DeepLogSKI
 from tods.sk_interface.detection_algorithm.LSTMODetector_skinterface import LSTMODetectorSKI
@@ -16,7 +17,7 @@ from tods.sk_interface.detection_algorithm.LSTMAEGMM_skinterface import LSTMAEGM
 from tods.sk_interface.detection_algorithm.LSTMGMM_skinterface import LSTMGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAEGMM2_skinterface import LSTMVAEGMM2SKI
 from run_scripts.metric_tools import multi_threshold_eval
-from run_scripts.plot_tools import plot_after_train
+from run_scripts.plot_tools import plot_after_train,plot_zspace_3d
 
     
     
@@ -51,24 +52,46 @@ def eval_step(args,transformer_DL,test_np,test_with_label_df):
     # 不同的模型可能包含不同的自定义计算，导致模型在load时有不同的写法，这种不同不能体现在通用函数(eval_step)里，应该体现在模型内部。
     print("> "* 50)
     print("run predict ... ")
-    pred_scores = transformer_DL.primitives[0]._clf.load_decision_function(model_path,test_np)
-    y_true = test_with_label_df[args['anomal_col']]
-    y_score = pd.Series(pred_scores.flatten())
-    print("> "* 50)
-    print("run eval ....")
-    res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
-    
-    best_f1_index = res['f1'].index(max(res['f1']))
-    
-    args['contamination'] = res['contamination'][best_f1_index]
-    
-    print("> "* 50)
-    print("run plot ....")
-    plot_after_train(
-                args,
-                df=test_with_label_df,
-                predict=y_score
-                     )
+    pred_scores=None
+    if args["model"] == "LSTMVAEGMM2":
+        energy_latent = transformer_DL.primitives[0]._clf.latent_predict(model_path,test_np)
+        samples,dim = energy_latent.shape
+        y_true = np.array(test_with_label_df[args['anomal_col']]).reshape(-1,1)[-samples:,:]
+        # energy_latent_label = np.concatenate((energy_latent,y_true),axis=1)
+        # energy_latent_label_df = pd.DataFrame(energy_latent_label)
+        # columns = ["energy","latent_1","latent_2",args['anomal_col']]
+        # energy_latent_label_df.columns = columns
+        # energy_latent_label_df[args['anomal_col']] = energy_latent_label_df[args['anomal_col']].astype(int)
+        # save_path = os.path.join(args['plot_dir'],args['dataset_name'],"{}_{}_{}_3d.png".format(args['dataset_name'],args['model'],args['sub_dataset']))
+        # plot_zspace_3d(energy_latent_label_df,col_names=columns[:3],anomal_col=args['anomal_col'],save_path=save_path)
+        
+        y_score = pd.Series(energy_latent[:,0].flatten())
+        
+        plot_after_train(
+                    args,
+                    df=test_with_label_df.iloc[-samples:,:],
+                    predict=y_score
+                        )
+        
+    else:
+        pred_scores = transformer_DL.primitives[0]._clf.load_decision_function(model_path,test_np)
+        y_true = test_with_label_df[args['anomal_col']]
+        y_score = pd.Series(pred_scores.flatten())
+        print("> "* 50)
+        print("run eval ....")
+        res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
+        
+        best_f1_index = res['f1'].index(max(res['f1']))
+        
+        args['contamination'] = res['contamination'][best_f1_index]
+        
+        print("> "* 50)
+        print("run plot ....")
+        plot_after_train(
+                    args,
+                    df=test_with_label_df,
+                    predict=y_score
+                        )
     
     
 dagmm_args = {
@@ -196,32 +219,7 @@ deeplog_args = {
     "sub_dataset":"null"
 }
 
-lstmvaegmm_args = {
-    "model":"LSTMVAEGMM",
-    "num_gmm":4,
-    "preprocessing":False,
-    "window_size":100, 
-    "batch_size":64,
-    "hidden_size":64,
-    "encoder_neurons":[64,32,16],
-    "decoder_neurons":[16,32,64],
-    "latent_dim":16,
-    # "encoder_neurons":[],
-    # "decoder_neurons":[],
-    # "latent_dim":16,
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
-    "contamination": 0.01,
-    "epochs": 1,
-    "anomal_col": "anomaly",
-    "plot": False,
-    "plot_dir": "run_scripts/out/imgs",
-    "metrics_dir": "run_scripts/out/metric",
-    "model_dir": "run_scripts/out/models",
-    "important_cols":['1','9','10','12','13','14','15','23'],
-    "plot_cols":['9','10','12'],
-    "use_important_cols":False,
-    "sub_dataset":"null"
-}
+
 
 lstmvaedistgmm_args = {
     "model":"LSTMVAEDISTGMM",
@@ -341,11 +339,35 @@ lstmvaegmm2_args = {
     "sub_dataset":"null"
 }
 
+lstmvaegmm_args = {
+    "model":"LSTMVAEGMM",
+    "num_gmm":2,
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":64,
+    "hidden_size":64,
+    "encoder_neurons":[64,32,16],
+    "decoder_neurons":[16,32,64],
+    "latent_dim":2,
+    "lamta":0.1, # loss funciton
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination": 0.01,
+    "epochs": 1,
+    "anomal_col": "anomaly",
+    "plot": False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
 
 vis_start_end = {
-    "MSL":{"start":21100,"end":21500},
+    "MSL":{"start":21000,"end":22200},
     "SMAP":{"start":365000,"end":370000},
-    "PSM":{"start":2000,"end":7800},
+    "PSM":{"start":0,"end":10000},
     "SMD":{"start":0,"end":120000},
     "SYN":{"start":0,"end":120000},
     "SWaT":{"start":0,"end":50000}
@@ -383,8 +405,8 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
         train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
         
     dataset_name = args["dataset_name"]
-    # test_np = test_np[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
-    # test_with_label_df = test_with_label_df[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
+    test_np = test_np[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
+    test_with_label_df = test_with_label_df[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
 
     model2ski = {
         "DAGMM":DAGMMSKI(
@@ -443,7 +465,9 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
             epochs = model2args["LSTMVAEGMM"]["epochs"],
             latent_dim = model2args["LSTMVAEGMM"]["latent_dim"],
             encoder_neurons = model2args["LSTMVAEGMM"]["encoder_neurons"],
-            decoder_neurons = model2args["LSTMVAEGMM"]["decoder_neurons"]
+            decoder_neurons = model2args["LSTMVAEGMM"]["decoder_neurons"],
+            num_gmm = model2args["LSTMVAEGMM"]["num_gmm"],
+            lamta = model2args["LSTMVAEGMM"]["lamta"],
         ),
         "LSTMVAEDISTGMM":LSTMVAEDISTGMMSKI(
             num_gmm = model2args["LSTMVAEDISTGMM"]["num_gmm"],

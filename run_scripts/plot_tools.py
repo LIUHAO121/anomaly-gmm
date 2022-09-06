@@ -34,17 +34,18 @@ def plot_one_column_dense(df,col_name,save_path):
     plt.savefig(save_path)
 
 def plot_predict(df,col_name,anomal_col,predict,threshold,save_path):
+    df = df.reset_index()
     a = df.loc[df[anomal_col] == 1]
 
     fig=plt.figure(facecolor='white',figsize=(35,20))
     ax1 = fig.add_subplot(211)
     ax1.plot(df[col_name], color='black', label = 'Normal', linewidth = 1.5)
     ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s = 20)
-    plt.legend(fontsize=25)
+    plt.legend(fontsize=25,loc="upper right")
     ax2 = fig.add_subplot(212)
     ax2.plot(predict, color='blue', label = 'Score', linewidth = 0.5)
     ax2.plot(threshold, color='green', label = 'threshold', linewidth = 1.5)
-    plt.legend(fontsize=25)
+    plt.legend(fontsize=25, loc="upper right")
     plt.savefig(save_path)
     plt.close('all')
     print("save picture {} ...".format(save_path))
@@ -93,9 +94,28 @@ def plot_anomal_multi_columns_3d(df,col_names, anomal_col,save_path):
     ax.legend()
     plt.savefig(save_path)
     
+def plot_zspace_3d(df,col_names,anomal_col,save_path):
+    assert len(col_names) <= 3 ,"too many cols for 3d plot"
+    df = df.reset_index()
+    a = df.loc[df[anomal_col] == 1]
+    outlier_index=list(a.index)
+    fig = plt.figure(figsize=(10,10))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(df[col_names[0]], 
+               df[col_names[1]], 
+               zs=df[col_names[2]],
+               s=5, lw=1, label="normal", c="blue")
+
+    ax.scatter( df.loc[outlier_index, col_names[0]], 
+                df.loc[outlier_index, col_names[1]],
+                zs=df.loc[outlier_index, col_names[2]],
+                lw=1, s=15, c="red", label=anomal_col)
+    ax.legend()
+    plt.savefig(save_path)
+    print("save 3d picture to {}".format(save_path))
     
 def plot_before_train(args, df):
-    # df = df.iloc[15000:17000,:]
+
     """
     df 必须包括标注列
     """
@@ -154,7 +174,7 @@ def plot_generate():
         
         plt.subplot(2,5,index+1)
         plt.plot(df[value_col],color='black', linewidth = 1)
-        plt.scatter(x=a.index,y=a[value_col],color='red', s = 10)
+        plt.scatter(x=a.index,y=a[value_col],color='red', s = 1)
         title = " ".join(anomaly_type.split("_"))
         plt.title(title)
         

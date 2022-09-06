@@ -513,7 +513,7 @@ class LstmVAEGMM2(BaseDetector):
         
 
         # lstm vae gmm
-        lstmvaegmm = Model(inputs, energy_out)
+        lstmvaegmm = Model(inputs, [energy_out,z[:,-1,:]]) # z return the last timepoint latent 
         
         
         lstmvaegmm.add_loss(self.vae_loss(inputs, outputs, z_mean, z_log, energy_out))
@@ -551,7 +551,7 @@ class LstmVAEGMM2(BaseDetector):
                                         validation_split=self.validation_size,
                                         verbose=self.verbose).history
         pred_scores = np.zeros([X.shape[0],1])
-        pred_scores[self.window_size-1:] = self.model_.predict(X_train)# 输出的shape 为(n,timestemps,features) 但是要用(n,features)
+        pred_scores[self.window_size-1:] = self.model_.predict(X_train)[0] 
 
         self.decision_scores_ = pred_scores
         self._process_decision_scores()
@@ -606,8 +606,27 @@ class LstmVAEGMM2(BaseDetector):
         #print(X[0])
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
         pred_scores = np.zeros([X.shape[0],1])
-        pred_scores[self.window_size-1:] = self.model_.predict(X_norm)
+        pred_scores[self.window_size-1:] = self.model_.predict(X_norm)[0]
         return pred_scores
+    
+    def latent_predict(self,model_path,X):
+        """
+        return (n_samples,latent_dim + 1)
+        """
+        
+        X = check_array(X)
+        #print("inside")
+        #print(X.shape)
+        #print(X[0])
+        loaded_model = tf.keras.models.load_model(model_path,custom_objects={'energy': self.energy,'sampling':self.sampling})
+        X = check_array(X)
+        X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
+    
+        energy,z =  loaded_model.predict(X_norm)
+
+        res  = np.concatenate((energy,z),axis=1)
+        return res
+        
     
     def load_decision_function(self, model_path, X):
         """Predict raw anomaly score of X using the fitted detector.
@@ -631,5 +650,5 @@ class LstmVAEGMM2(BaseDetector):
         #print(X[0])
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
         pred_scores = np.zeros([X.shape[0],1])
-        pred_scores[self.window_size-1:] = loaded_model.predict(X_norm)
+        pred_scores[self.window_size-1:] = loaded_model.predict(X_norm)[0]
         return pred_scores

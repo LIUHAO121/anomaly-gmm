@@ -427,8 +427,7 @@ class LstmVAE(BaseDetector):
             layer = Dropout(self.dropout_rate)(layer)
             
         # Output layer
-        outputs = Dense(self.n_features_, activation=self.output_activation)(
-            layer)
+        outputs = Dense(self.n_features_, activation=self.output_activation)(layer)
         
         # Instatiate decoder
         decoder = Model(latent_inputs, outputs)
