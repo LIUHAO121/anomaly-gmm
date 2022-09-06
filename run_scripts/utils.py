@@ -466,7 +466,6 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
             latent_dim = model2args["LSTMVAEGMM"]["latent_dim"],
             encoder_neurons = model2args["LSTMVAEGMM"]["encoder_neurons"],
             decoder_neurons = model2args["LSTMVAEGMM"]["decoder_neurons"],
-            num_gmm = model2args["LSTMVAEGMM"]["num_gmm"],
             lamta = model2args["LSTMVAEGMM"]["lamta"],
         ),
         "LSTMVAEDISTGMM":LSTMVAEDISTGMMSKI(
