@@ -341,7 +341,7 @@ lstmvaegmm2_args = {
 
 lstmvaegmm_args = {
     "model":"LSTMVAEGMM",
-    "num_gmm":2,
+    "num_gmm":1,
     "preprocessing":False,
     "window_size":100, 
     "batch_size":64,
@@ -404,7 +404,7 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
     else:
         train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
         
-    dataset_name = args["dataset_name"]
+    # dataset_name = args["dataset_name"]
     # test_np = test_np[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
     # test_with_label_df = test_with_label_df[vis_start_end[dataset_name]["start"]:vis_start_end[dataset_name]["end"]]
 
