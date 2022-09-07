@@ -91,11 +91,20 @@ def prepare_data(args):
     return train_np , test_np, test_with_label_df 
 
 if __name__ == "__main__":
+    
     # models = ["DAGMM","lstmod", "LSTMAE", "telemanom","deeplog", "LSTMVAEGMM"]
     # models = ["LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"]
     # models = ["LSTMVAE"] 
     # models = ["deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM", "LSTMGMM"]
-    models = ["LSTMVAEGMM"]
+    
+    import argparse
+    parser = argparse.ArgumentParser(description='Tensorflow Training')
+    parser.add_argument('--models', type=str, nargs='+', default=[])
+    args = parser.parse_args()
+    
+    
+    models = args.models
+    print("models: ", models)
     for m in models:
         print(f" < * > {m} " * 20)
         train(

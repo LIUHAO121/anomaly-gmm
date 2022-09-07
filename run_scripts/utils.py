@@ -341,7 +341,7 @@ lstmvaegmm2_args = {
 
 lstmvaegmm_args = {
     "model":"LSTMVAEGMM",
-    "num_gmm":1,
+    "num_gmm":2,
     "preprocessing":False,
     "window_size":100, 
     "batch_size":64,

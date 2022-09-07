@@ -40,6 +40,7 @@ import os
 from run_scripts.plot_tools import plot_anomal_multi_columns,plot_anomal_multi_columns_3d,plot_multi_columns,plot_one_column_with_label,plot_predict, plot_after_train,plot_before_train
 from run_scripts.utils import train_step,eval_step,train
 
+
 import tensorflow as tf
 gpu_devices = tf.config.experimental.list_physical_devices('GPU')
 for device in gpu_devices:
@@ -93,7 +94,12 @@ def prepare_data(args):
 if __name__ == "__main__":
     # models = ["DAGMM", "lstmod", "LSTMAE", "LSTMVAE", "telemanom", "deeplog", "LSTMVAEGMM", "LSTMAEGMM", "GRUVAEGMM", "LSTMVAEDISTGMM"]
     # models = ["deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM", "LSTMGMM"]
-    models = ["LSTMVAEGMM"]
+    import argparse
+    parser = argparse.ArgumentParser(description='Tensorflow Training')
+    parser.add_argument('--models', type=str, nargs='+', default=[])
+    args = parser.parse_args()
+    models = args.models
+    print("models: ", models)
     for m in models:
         print(f" < * > {m} " * 20)
         train(

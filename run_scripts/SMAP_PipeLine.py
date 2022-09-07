@@ -100,7 +100,12 @@ if __name__ == "__main__":
     # models = ["LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"] 
     # models = ["LSTMVAE"]
     # models = ["deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM", "LSTMGMM"]
-    models = ["LSTMVAEGMM2"]
+    import argparse
+    parser = argparse.ArgumentParser(description='Tensorflow Training')
+    parser.add_argument('--models', type=str, nargs='+', default=[])
+    args = parser.parse_args()
+    models = args.models
+    print("models: ", models)
     for m in models:
         print(f" < * > {m} " * 20)
         train(
