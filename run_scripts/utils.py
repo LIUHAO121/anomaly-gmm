@@ -341,7 +341,7 @@ lstmvaegmm2_args = {
 
 lstmvaegmm_args = {
     "model":"LSTMVAEGMM",
-    "num_gmm":2,
+    "num_gmm":4,
     "preprocessing":False,
     "window_size":100, 
     "batch_size":64,
@@ -373,7 +373,7 @@ vis_start_end = {
     "SWaT":{"start":0,"end":50000}
 }
 
-def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
+def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=None):
     model2args = {
         "DAGMM":dagmm_args,
         "lstmod":lstmod_args,
@@ -393,6 +393,7 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None):
     args['dataset_dir'] = f'datasets/{dataset_name}'
     args['dataset_name'] = dataset_name
     args['dataset_dim'] = dataset_dim
+    args['num_gmm']=num_gmm
     
     train_np=None
     test_np=None

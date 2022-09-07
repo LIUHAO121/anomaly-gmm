@@ -97,14 +97,17 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Tensorflow Training')
     parser.add_argument('--models', type=str, nargs='+', default=[])
+    parser.add_argument('--num_gmm', type=int, default=4,help="number of gmm")
     args = parser.parse_args()
     models = args.models
     print("models: ", models)
+    print("num gmm: ",args.num_gmm)
     for m in models:
         print(f" < * > {m} " * 20)
         train(
             m,
             dataset_name=dataset_name,
             dataset_dim=dataset_dim,
-            prepare_data=prepare_data
+            prepare_data=prepare_data,
+            num_gmm=args.num_gmm
             )
