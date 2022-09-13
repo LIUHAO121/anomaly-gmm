@@ -16,6 +16,7 @@ from tods.sk_interface.detection_algorithm.GRUVAEGMM_skinterface import GRUVAEGM
 from tods.sk_interface.detection_algorithm.LSTMAEGMM_skinterface import LSTMAEGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMGMM_skinterface import LSTMGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAEGMM2_skinterface import LSTMVAEGMM2SKI
+from tods.sk_interface.detection_algorithm.LSTMVAEMTDF_skinterface import LSTMVAEMTDFSKI
 from run_scripts.metric_tools import multi_threshold_eval
 from run_scripts.plot_tools import plot_after_train,plot_zspace_3d
 
@@ -364,6 +365,32 @@ lstmvaegmm_args = {
     "sub_dataset":"null"
 }
 
+lstmvaemtdf_args = {
+    "model":"LSTMVAEMTDF",
+    "num_gmm":4,
+    "preprocessing":False,
+    "window_size":100, 
+    "batch_size":64,
+    "hidden_size":64,
+    "encoder_neurons":[64,32,16],
+    "decoder_neurons":[16,32,64],
+    "latent_dim":2,
+    "lamta":0.1, # loss funciton
+    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "contamination": 0.01,
+    "epochs": 1,
+    "anomal_col": "anomaly",
+    "plot": False,
+    "plot_dir": "run_scripts/out/imgs",
+    "metrics_dir": "run_scripts/out/metric",
+    "model_dir": "run_scripts/out/models",
+    "important_cols":['1','9','10','12','13','14','15','23'],
+    "plot_cols":['9','10','12'],
+    "use_important_cols":False,
+    "sub_dataset":"null"
+}
+
+
 vis_start_end = {
     "MSL":{"start":21000,"end":22200},
     "SMAP":{"start":365000,"end":370000},
@@ -386,7 +413,8 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=
         "GRUVAEGMM": gruvaegmm_args,
         "LSTMAEGMM": lstmaegmm_args,
         "LSTMGMM":lstmgmm_args,
-        "LSTMVAEGMM2":lstmvaegmm2_args
+        "LSTMVAEGMM2":lstmvaegmm2_args,
+        "LSTMVAEMTDF": lstmvaemtdf_args
     }
     args = model2args[model]
     args['model_dir'] = "run_scripts/out/models"
@@ -520,6 +548,16 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=
             latent_dim = model2args["LSTMVAEGMM2"]["latent_dim"],
             encoder_neurons = model2args["LSTMVAEGMM2"]["encoder_neurons"],
             decoder_neurons = model2args["LSTMVAEGMM2"]["decoder_neurons"]
+        ),
+        "LSTMVAEMTDF":LSTMVAEMTDFSKI(
+            window_size=model2args["LSTMVAEMTDF"]['window_size'],
+            hidden_size = model2args["LSTMVAEMTDF"]['hidden_size'],
+            preprocessing = model2args["LSTMVAEMTDF"]["preprocessing"],
+            batch_size = model2args["LSTMVAEMTDF"]["batch_size"],
+            epochs = model2args["LSTMVAEMTDF"]["epochs"],
+            latent_dim = model2args["LSTMVAEMTDF"]["latent_dim"],
+            encoder_neurons = model2args["LSTMVAEMTDF"]["encoder_neurons"],
+            decoder_neurons = model2args["LSTMVAEMTDF"]["decoder_neurons"]
         )
     }
     

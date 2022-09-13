@@ -155,12 +155,25 @@ def diffience(series,window=1):
     series_cp = series.copy()
     s_len = len(series_cp)
     for j in range(window):
-        series_cp[0]=0.0
+        series_cp[j]=0.0
     for i in range(window,s_len):
         series_cp[i] = abs(series[i] - series[i-window:i].mean())
     return series_cp 
         
-
+def diffience2(series,window=1):
+    series_cp = series.copy()
+    diff_list1=[] # 1阶
+    diff_list2=[] # 2阶
+    s_len = len(series_cp)
+    for i in range(s_len-1):
+        diff_list1.append(abs(series_cp[i+1]-series_cp[i]))
+    for j in range(s_len-2):
+        diff_list2.append(abs(diff_list1[j+1]-diff_list1[j]))
+    diff_list2.insert(0,0.0)
+    diff_list2.insert(0,0.0)
+    return pd.Series(diff_list2)
+    
+    
 def plot_generate():
     anomaly_types = ["point_global","point_contextual","collective_global","collective_seasonal","collective_trend"]
     plt.figure(figsize=(15, 8))
@@ -177,7 +190,6 @@ def plot_generate():
         plt.scatter(x=a.index,y=a[value_col],color='red', s = 1)
         title = " ".join(anomaly_type.split("_"))
         plt.title(title)
-        
         plt.legend(fontsize=1)
         plt.subplot(2,5,index+6)
         plt.plot(diffience(df[value_col],window=1),color='blue', linewidth = 1)
