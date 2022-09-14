@@ -334,7 +334,7 @@ class LstmVAEMTDF(BaseDetector):
                  epochs : int =100, batch_size : int =32, dropout_rate : float =0.0,
                  l2_regularizer : float =0.1, validation_size : float =0.1, encoder_neurons=None, decoder_neurons=None,
                  latent_dim=2, hidden_activation='relu',
-                 output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0,
+                 output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0,num_gmm: int=4,
                  window_size: int = 1, stacked_layers: int  = 1, verbose : int = 1, contamination:int = 0.001,lamta: float=0.1):
 
         super(LstmVAEMTDF, self).__init__(contamination=contamination)
@@ -361,6 +361,7 @@ class LstmVAEMTDF(BaseDetector):
         self.gamma = gamma
         self.capacity = capacity
         self.lamta = lamta
+        self.num_gmm = num_gmm
         
 
 
@@ -403,7 +404,7 @@ class LstmVAEMTDF(BaseDetector):
         return K.mean(reconstruction_loss + kl_loss) + self.lamta * K.mean(energy_out)
 
 
-    def energy(self, x):
+    def energy(self, gamma_and_z):
         """
         Multiply Temporal Difference Function ,consider temporal information
         calculate energy for every sample in z
@@ -412,14 +413,20 @@ class LstmVAEMTDF(BaseDetector):
         
         """
 
-        all_td = x[:,-1,:] - x[:,-2, :] # (i,l)
-   
-        z_c_left = all_td[:, None, :]
-        z_c_right = all_td[:, :, None]
+        gamma,z = gamma_and_z
+        gamma_sum = tf.reduce_sum(gamma, axis=1) # (i,k)
+        mu = tf.einsum('itk,itl->ikl',gamma,z) / gamma_sum[:,:,None]  # (i,k,l) 每个sample之间的mu和sigma都是独立的
         
+        z_centered = z[:,:,None,:] - mu[:,None, :, :] # (i,t,k,l)
+        z_centered_mean = tf.reduce_mean(z_centered,axis=1)
+        z_c_left = z_centered_mean[:,:,None,:]
+        z_c_right = z_centered_mean[:,:,:,None]
+        
+
         matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right))
-   
-        e=tf.reshape(matrix_matmul,[-1,1])
+        e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
+        e = tf.reduce_sum((e_i_k) * gamma[:,-1,:],axis=-1)
+        e=tf.reshape(e,[-1,1])
         return -tf.math.log(e)
   
 
@@ -476,28 +483,43 @@ class LstmVAEMTDF(BaseDetector):
          # Generate outputs
         outputs = decoder(z)
         
-    
+        
+        # estimate model
+        est_input = Input(shape=(None, self.n_features_,), name="est_input")
+        est_outputs = Dense(self.n_features_, activation=self.output_activation)(est_input)
+        est_outputs = Dense(16, activation=self.output_activation)(est_input)
+        est_outputs = Dense(8, activation=self.output_activation)(est_input)
+        est_outputs = Dense(self.num_gmm)(est_outputs) # (i,t,k）
+        est_outputs = tf.nn.softmax(est_outputs)
+        
+        est_model = Model(est_input,est_outputs) 
+        if self.verbose >= 1:
+            est_model.summary()
+            
+        est_outputs = est_model(outputs) # gamma
+        
         # energy calculate
-        energy_input = Input(shape=(None, self.n_features_,), name="energy_input")
+        energy_input1 = Input(shape=(None, self.num_gmm,), name="energy_input1")
+        energy_input2 = Input(shape=(None, self.n_features_,), name="energy_input2")
         
-        energy_out = Lambda(self.energy)(energy_input)
+        energy_out = Lambda(self.energy)([energy_input1,energy_input2])
         
-        energy_model = Model(energy_input,energy_out)
+        energy_model = Model([energy_input1,energy_input2],energy_out)
         if self.verbose >= 1:
             energy_model.summary()
         
-        energy_out = energy_model(outputs)
+        energy_out = energy_model([est_outputs, outputs])
         
 
         # lstm vae gmm
-        lstmvae = Model(inputs, energy_out)
+        lstmvaegmm = Model(inputs, energy_out)
         
         
-        lstmvae.add_loss(self.vae_loss(inputs, outputs, z_mean, z_log, energy_out))
-        lstmvae.compile(optimizer=self.optimizer)
+        lstmvaegmm.add_loss(self.vae_loss(inputs, outputs, z_mean, z_log, energy_out))
+        lstmvaegmm.compile(optimizer=self.optimizer)
         if self.verbose >= 1:
-            lstmvae.summary()
-        return lstmvae
+            lstmvaegmm.summary()
+        return lstmvaegmm
 
     def fit(self, X, y=None):
         """

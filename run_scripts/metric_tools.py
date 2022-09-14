@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
     metric_dir = "run_scripts/out/metric"
     # models = [ "DAGMM", "lstmod", "LSTMAE","LSTMVAE",  "telemanom", "deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM","LSTMGMM"]
-    models = ["LSTMVAEGMM"]
+    models = ["LSTMVAEMTDF"]
     
     for m in models:
         merge_smd_metric(metric_dir=metric_dir,model=m)

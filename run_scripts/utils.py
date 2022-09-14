@@ -557,7 +557,8 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=
             epochs = model2args["LSTMVAEMTDF"]["epochs"],
             latent_dim = model2args["LSTMVAEMTDF"]["latent_dim"],
             encoder_neurons = model2args["LSTMVAEMTDF"]["encoder_neurons"],
-            decoder_neurons = model2args["LSTMVAEMTDF"]["decoder_neurons"]
+            decoder_neurons = model2args["LSTMVAEMTDF"]["decoder_neurons"],
+            num_gmm=model2args["LSTMVAEMTDF"]["num_gmm"]
         )
     }
     
