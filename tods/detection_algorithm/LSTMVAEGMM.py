@@ -171,6 +171,12 @@ class Hyperparams(Hyperparams_ODBase):
         description="the number of gmm"
     )
     
+    position = hyperparams.Hyperparameter[int](
+        default=100,
+        semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        description="point location for energy calculate"
+    )
+    
     lamta = hyperparams.Hyperparameter[float](
         default=0.1,
         semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
@@ -266,6 +272,7 @@ class LSTMVAEGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Param
                             gamma=hyperparams['gamma'],
                             capacity=hyperparams['capacity'],
                             lamta=hyperparams['lamta'],
+                            position=hyperparams['position'],
                                 )
         
 
@@ -336,7 +343,7 @@ class LstmVAEGMM(BaseDetector):
                  l2_regularizer : float =0.1, validation_size : float =0.1, encoder_neurons=None, decoder_neurons=None,
                  latent_dim=2, hidden_activation='relu',
                  output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0, num_gmm:int=4,
-                 window_size: int = 1, stacked_layers: int  = 1, verbose : int = 1, contamination:int = 0.001,lamta: float=0.1):
+                 window_size: int = 1, stacked_layers: int  = 1, verbose : int = 1, contamination:int = 0.001,lamta: float=0.1,position:int=99):
 
         super(LstmVAEGMM, self).__init__(contamination=contamination)
         
@@ -363,7 +370,7 @@ class LstmVAEGMM(BaseDetector):
         self.capacity = capacity
         self.num_gmm = num_gmm
         self.lamta = lamta
-        
+        self.position = position
 
 
     def sampling(self, args):
@@ -423,11 +430,10 @@ class LstmVAEGMM(BaseDetector):
         mu = tf.einsum('itk,itl->ikl',gamma,z) / gamma_sum[:,:,None]  # (i,k,l) 每个sample之间的mu和sigma都是独立的
         
         z_centered = z[:,:,None,:] - mu[:,None, :, :] # (i,t,k,l)
-        z_centered_last = z_centered[:,-1,:,:]
+        z_centered_last = z_centered[:,self.position,:,:]
         z_c_left = z_centered_last[:,:,None,:]
         z_c_right = z_centered_last[:,:,:,None]
 
-        
         matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right))
         e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
         e = tf.reduce_sum((e_i_k) * gamma[:,-1,:],axis=-1)

@@ -342,16 +342,16 @@ lstmvaegmm2_args = {
 
 lstmvaegmm_args = {
     "model":"LSTMVAEGMM",
-    "num_gmm":4,
-    "preprocessing":False,
-    "window_size":100, 
-    "batch_size":64,
-    "hidden_size":64,
-    "encoder_neurons":[64,32,16],
-    "decoder_neurons":[16,32,64],
-    "latent_dim":2,
-    "lamta":0.1, # loss funciton
-    "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
+    "num_gmm": 4,
+    "preprocessing": False,
+    "window_size": 100, 
+    "batch_size": 64,
+    "hidden_size": 64,
+    "encoder_neurons": [64,32,16],
+    "decoder_neurons": [16,32,64],
+    "latent_dim": 2,
+    "lamta": 0.1, # loss funciton
+    "contaminations": [0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "contamination": 0.01,
     "epochs": 1,
     "anomal_col": "anomaly",
@@ -362,7 +362,8 @@ lstmvaegmm_args = {
     "important_cols":['1','9','10','12','13','14','15','23'],
     "plot_cols":['9','10','12'],
     "use_important_cols":False,
-    "sub_dataset":"null"
+    "sub_dataset":"null",
+    "position":99   # the point position of a timeseries for calculate energy
 }
 
 lstmvaemtdf_args = {
@@ -400,7 +401,7 @@ vis_start_end = {
     "SWaT":{"start":0,"end":50000}
 }
 
-def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=None):
+def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=None,position=100):
     model2args = {
         "DAGMM":dagmm_args,
         "lstmod":lstmod_args,
@@ -422,6 +423,7 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=
     args['dataset_name'] = dataset_name
     args['dataset_dim'] = dataset_dim
     args['num_gmm']=num_gmm
+    args['position'] = position
     
     train_np=None
     test_np=None
@@ -496,6 +498,7 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=
             encoder_neurons = model2args["LSTMVAEGMM"]["encoder_neurons"],
             decoder_neurons = model2args["LSTMVAEGMM"]["decoder_neurons"],
             lamta = model2args["LSTMVAEGMM"]["lamta"],
+            position = model2args["LSTMVAEGMM"]["position"]
         ),
         "LSTMVAEDISTGMM":LSTMVAEDISTGMMSKI(
             num_gmm = model2args["LSTMVAEDISTGMM"]["num_gmm"],

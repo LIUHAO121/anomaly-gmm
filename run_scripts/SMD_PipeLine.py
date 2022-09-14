@@ -123,10 +123,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Tensorflow Training')
     parser.add_argument('--models', type=str, nargs='+', default=[])
     parser.add_argument('--num_gmm', type=int, default=4,help="number of gmm")
+    parser.add_argument('--position', type=int, default=99,help="location of a timepoint in a timeseries for energy calculate")
     args = parser.parse_args()
     models = args.models
     print("models: ", models)
     print("num gmm: ",args.num_gmm)
     for m in models:
         for mn in machine_names:
-            train(model=m,dataset_name=dataset_name,dataset_dim=dataset_dim,prepare_data=prepare_data,machine_name=mn,num_gmm=args.num_gmm)
+            train(model=m,dataset_name=dataset_name,dataset_dim=dataset_dim,prepare_data=prepare_data,machine_name=mn,num_gmm=args.num_gmm,position=args.position)
