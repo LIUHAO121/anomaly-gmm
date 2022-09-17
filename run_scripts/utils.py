@@ -30,6 +30,12 @@ def train_step(args,transformer_DL,train_np,test_np,test_with_label_df):
     
     y_true = test_with_label_df[args['anomal_col']]
     y_score = pd.Series(prediction_score_DL.flatten())
+    
+  
+    for i in range(1,y_score.shape[0]):
+        y_score[i] = abs(y_score[i]-y_score[i-1])
+    y_score[0]=0.0
+        
     res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
     
     model_path = os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
@@ -67,7 +73,9 @@ def eval_step(args,transformer_DL,test_np,test_with_label_df):
         # plot_zspace_3d(energy_latent_label_df,col_names=columns[:3],anomal_col=args['anomal_col'],save_path=save_path)
         
         y_score = pd.Series(energy_latent[:,0].flatten())
-        
+        for i in range(1,y_score.shape[0]):
+            y_score[i] = abs(y_score[i]-y_score[i-1])
+        y_score[0]=0.0
         plot_after_train(
                     args,
                     df=test_with_label_df.iloc[-samples:,:],

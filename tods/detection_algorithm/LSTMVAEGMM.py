@@ -642,5 +642,5 @@ class LstmVAEGMM(BaseDetector):
         #print(X[0])
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
         pred_scores = np.zeros([X.shape[0],1])
-        pred_scores[self.position:self.position+X.shape[0]+1-self.window_size] = loaded_model.predict(X_norm)
+        pred_scores[self.position:self.position + X.shape[0]+1-self.window_size] = loaded_model.predict(X_norm)
         return pred_scores
