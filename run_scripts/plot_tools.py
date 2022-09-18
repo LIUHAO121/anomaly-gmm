@@ -50,6 +50,37 @@ def plot_predict(df,col_name,anomal_col,predict,threshold,save_path):
     plt.close('all')
     print("save picture {} ...".format(save_path))
     
+
+def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,save_dir,segment=500):
+    df = df.reset_index()
+    data_len = df.shape[0]
+    img_num = data_len//segment
+    for i in range(img_num):
+        start=i*segment
+        end = (i+1)*segment
+        part_df = df.iloc[start:end,:].reset_index()
+        a = part_df.loc[part_df[anomal_col] == 1]
+        
+        part_predict = predict[start:end]
+        part_threshold=threshold[start:end]
+        part_name = "{}_{}".format(start,end)
+        
+        fig=plt.figure(facecolor='white',figsize=(35,20))
+        ax1 = fig.add_subplot(211)
+        ax1.plot(part_df[col_name], color='black', label = 'Normal', linewidth = 1.5)
+        ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s = 20)
+        plt.legend(fontsize=25,loc="upper right")
+        ax2 = fig.add_subplot(212)
+        ax2.plot(part_predict, color='blue', label = 'Score', linewidth = 0.5)
+        ax2.plot(part_threshold, color='green', label = 'threshold', linewidth = 1.5)
+        plt.legend(fontsize=25, loc="upper right")
+        if args.get('sub_dataset',None) != None:
+            save_path = os.path.join(save_dir,"{}_{}_{}_{}_{}_predict.png".format(args['dataset_name'],args['sub_dataset'],args['model'],args['sub_dataset'],part_name))
+        else:
+            save_path = os.path.join(save_dir,"{}_{}_{}_{}_predict.png".format(args['dataset_name'],args['model'],args['sub_dataset'],part_name))
+        plt.savefig(save_path)
+        plt.close('all')
+        print("save picture {} ...".format(save_path))
     
     
 
@@ -93,6 +124,7 @@ def plot_anomal_multi_columns_3d(df,col_names, anomal_col,save_path):
                 lw=1, s=3, c="red", label="outliers")
     ax.legend()
     plt.savefig(save_path)
+    
     
 def plot_zspace_3d(df,col_names,anomal_col,save_path):
     assert len(col_names) <= 3 ,"too many cols for 3d plot"
@@ -143,12 +175,15 @@ def plot_after_train(args,df,predict):
     threshod_series = pd.Series([threshold for i in range(len(predict))])
     for col in df.columns[:-1][:1]:
         os.makedirs(os.path.join(args['plot_dir'],args['dataset_name']),exist_ok=True)
-        plot_predict(df, 
+        plot_predict_to_many_imgs(args,df, 
                      col_name=col,
                      anomal_col=args['anomal_col'], 
                      predict=predict, 
                      threshold=threshod_series,
-                     save_path=os.path.join(args['plot_dir'],args['dataset_name'],'{}_{}_{}_{}_predict.png'.format(args['dataset_name'],args['model'],args['sub_dataset'],col)))
+                     save_dir=os.path.join(args['plot_dir'],args['dataset_name']),
+                     segment=500,
+                     
+                     )
 
 
 def diffience(series,window=1):

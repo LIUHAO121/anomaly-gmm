@@ -18,7 +18,7 @@ from tods.sk_interface.detection_algorithm.LSTMGMM_skinterface import LSTMGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAEGMM2_skinterface import LSTMVAEGMM2SKI
 from tods.sk_interface.detection_algorithm.LSTMVAEMTDF_skinterface import LSTMVAEMTDFSKI
 from run_scripts.metric_tools import multi_threshold_eval
-from run_scripts.plot_tools import plot_after_train,plot_zspace_3d
+from run_scripts.plot_tools import plot_after_train,plot_zspace_3d,plot_predict_to_many_imgs
 
     
     
@@ -30,11 +30,6 @@ def train_step(args,transformer_DL,train_np,test_np,test_with_label_df):
     
     y_true = test_with_label_df[args['anomal_col']]
     y_score = pd.Series(prediction_score_DL.flatten())
-    
-  
-    for i in range(1,y_score.shape[0]):
-        y_score[i] = abs(y_score[i]-y_score[i-1])
-    y_score[0]=0.0
         
     res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
     
@@ -72,14 +67,10 @@ def eval_step(args,transformer_DL,test_np,test_with_label_df):
         # save_path = os.path.join(args['plot_dir'],args['dataset_name'],"{}_{}_{}_3d.png".format(args['dataset_name'],args['model'],args['sub_dataset']))
         # plot_zspace_3d(energy_latent_label_df,col_names=columns[:3],anomal_col=args['anomal_col'],save_path=save_path)
         
-        y_score = pd.Series(energy_latent[:,0].flatten())
-        for i in range(1,y_score.shape[0]):
-            y_score[i] = abs(y_score[i]-y_score[i-1])
-        y_score[0]=0.0
         plot_after_train(
                     args,
                     df=test_with_label_df.iloc[-samples:,:],
-                    predict=y_score
+                    predict=energy_latent[:,0][-samples:]
                         )
         
     else:
@@ -228,8 +219,6 @@ deeplog_args = {
     "sub_dataset":"null"
 }
 
-
-
 lstmvaedistgmm_args = {
     "model":"LSTMVAEDISTGMM",
     "num_gmm":4,
@@ -302,7 +291,6 @@ lstmaegmm_args = {
     "sub_dataset":"null"
 }
 
-
 lstmgmm_args = {
     "model":"LSTMGMM",
     "num_gmm":4,
@@ -336,7 +324,7 @@ lstmvaegmm2_args = {
     "latent_dim":2,
     "contaminations":[0.001, 0.005, 0.01, 0.015, 0.02, 0.05, 0.1, 0.2],
     "contamination":0.01,
-    "epochs": 6,
+    "epochs": 3,
     "anomal_col":"anomaly",
     "plot":False,
     "plot_dir": "run_scripts/out/imgs",
@@ -405,7 +393,7 @@ vis_start_end = {
     "SMAP":{"start":365000,"end":370000},
     "PSM":{"start":7000,"end":8200},
     "SMD":{"start":0,"end":120000},
-    "SYN":{"start":0,"end":120000},
+    "SYN":{"start":0,"end":2000},
     "SWaT":{"start":0,"end":50000}
 }
 
@@ -541,7 +529,7 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=
             encoder_neurons = model2args["LSTMAEGMM"]["encoder_neurons"],
             decoder_neurons = model2args["LSTMAEGMM"]["decoder_neurons"]
         ),
-        "LSTMGMM":LSTMGMMSKI(
+        "LSTMGMM":LSTMGMMSKI( 
             num_gmm = model2args["LSTMAEGMM"]["num_gmm"],
             window_size=model2args["LSTMAEGMM"]['window_size'],
             hidden_size = model2args["LSTMAEGMM"]['hidden_size'],

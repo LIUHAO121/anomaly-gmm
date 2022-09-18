@@ -61,9 +61,9 @@ def prepare_data(args):
     rows = train_data.shape[0]
     train_num = int(rows * 0.5)
     
-    train_np = train_data.values[:train_num,:4] 
-    test_np = test_data.values[train_num:,:4]  
-    test_label_np = test_data.values[train_num:,:]  
+    train_np = train_data.values[:,:4] 
+    test_np = test_data.values[:,:4]  
+    test_label_np = test_data.values[:,:4]  
     
     train_np = np.nan_to_num(train_np)
     test_np = np.nan_to_num(test_np)
@@ -93,12 +93,22 @@ def prepare_data(args):
 
 if __name__ == "__main__":
     # models = ["DAGMM","lstmod", "LSTMAE","LSTMVAE", "telemanom","deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM"]
-    models = ["deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM", "LSTMGMM"]
+    import argparse
+    parser = argparse.ArgumentParser(description='Tensorflow Training')
+    parser.add_argument('--models', type=str, nargs='+', default=[],help="train models")
+    parser.add_argument('--num_gmm', type=int, default=4,help="number of gmm")
+    parser.add_argument('--position', type=int, default=99,help="location of a timepoint in a timeseries for energy calculate")
+    args = parser.parse_args()
+    models = args.models
+    print("models: ", models)
+    print("num gmm: ",args.num_gmm)
     for m in models:
         print(f" < * > {m} " * 20)
         train(
             m,
             dataset_name=dataset_name,
             dataset_dim=dataset_dim,
-            prepare_data=prepare_data
+            prepare_data=prepare_data,
+            num_gmm=args.num_gmm,
+            position=args.position
             )

@@ -182,36 +182,35 @@ if __name__ == '__main__':
                        {'freq': 0.04, 'coef': 1.5, "offset": -2.0, 'noise_amp': 0.05},]
 
 
-    multivariate_data = MultivariateDataGenerator(dim=5, stream_length=100, behavior=BEHAVIOR,
+    multivariate_data = MultivariateDataGenerator(dim=5, stream_length=1200, behavior=BEHAVIOR,
                                                 behavior_config=BEHAVIOR_CONFIG)
 
 
-    type="collective_trend"
-    # multivariate_data.point_global_outliers(dim_no=0, ratio=0.01, factor=5, radius=5)
-    # multivariate_data.point_contextual_outliers(dim_no=0, ratio=0.01, factor=15, radius=15)
-    # multivariate_data.collective_global_outliers(dim_no=0, ratio=0.1, radius=5, option='square', coef=1.5, noise_amp=0.03, level=20, freq=0.04, offset=0.0)
-    # multivariate_data.collective_seasonal_outliers(dim_no=0, ratio=0.1, factor=5, radius=5)
-    multivariate_data.collective_trend_outliers(dim_no=0, ratio=0.1, factor=0.5, radius=5)
+    type="test"
+    multivariate_data.point_global_outliers(dim_no=0, ratio=0.01, factor=5, radius=5)
+    multivariate_data.point_contextual_outliers(dim_no=0, ratio=0.01, factor=15, radius=15)
+    multivariate_data.collective_global_outliers(dim_no=0, ratio=0.01, radius=5, option='square', coef=1.5, noise_amp=0.03, level=20, freq=0.04, offset=0.0)
+    multivariate_data.collective_seasonal_outliers(dim_no=0, ratio=0.01, factor=5, radius=5)
+    multivariate_data.collective_trend_outliers(dim_no=0, ratio=0.01, factor=0.5, radius=5)
 
     df = pd.DataFrame({'col_0': multivariate_data.data[0],
-                    #    'col_1': multivariate_data.data[1],
-                    #    'col_2': multivariate_data.data[2],
-                    #    'col_3': multivariate_data.data[3],
-                    #    'col_4': multivariate_data.data[4],
+                       'col_1': multivariate_data.data[1],
+                       'col_2': multivariate_data.data[2],
+                       'col_3': multivariate_data.data[3],
+                       'col_4': multivariate_data.data[4],
                        'anomaly': multivariate_data.label})
     df.to_csv("datasets/SYN/{}.csv".format(type), index=False)
 
-    plt.figure(figsize=(5, 3))
-    plt.subplot(111)
-    plt.plot(multivariate_data.timestamp, multivariate_data.data[0])
-    # plt.subplot(512)
-    # plt.plot(multivariate_data.timestamp, multivariate_data.data[1])
-    # plt.subplot(513)
-    # plt.plot(multivariate_data.timestamp, multivariate_data.data[2])
-    # plt.subplot(514)
-    # plt.plot(multivariate_data.timestamp, multivariate_data.data[3])
-    # plt.subplot(515)
-    # plt.plot(multivariate_data.timestamp, multivariate_data.data[4])
+    fig=plt.figure(facecolor='white',figsize=(35,20))
+    ax1 = fig.add_subplot(511)
+    ax1.plot(multivariate_data.timestamp, multivariate_data.data[0])
+    ax2 = fig.add_subplot(512)
+    ax2.plot(multivariate_data.timestamp, multivariate_data.data[1])
+    ax3 = fig.add_subplot(513)
+    ax3.plot(multivariate_data.timestamp, multivariate_data.data[2])
+    ax4 = fig.add_subplot(514)
+    ax4.plot(multivariate_data.timestamp, multivariate_data.data[3])
+    ax5 = fig.add_subplot(515)
+    ax5.plot(multivariate_data.timestamp, multivariate_data.data[4])
 
     plt.savefig("{}.jpg".format(type))
-    plt.show()
