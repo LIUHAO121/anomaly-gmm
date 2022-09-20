@@ -119,10 +119,10 @@ def merge_all_metric(metric_dir,models):
             metric_file = os.path.join(metric_dir,f"{d}_{m}_null.csv")
             df = pd.read_csv(metric_file)
             best_f1_df = df[df['f1']==df['f1'].max()]
-            res['contamination'].append(round(best_f1_df['contamination'].to_list()[0],4))
-            res['precision'].append(round(best_f1_df['precision'].to_list()[0],4))        
-            res['recall'].append(round(best_f1_df['recall'].to_list()[0],4))  
-            res['f1'].append(round(best_f1_df['f1'].to_list()[0],4))   
+            res['contamination'].append(round(best_f1_df['contamination'].to_list()[0],5))
+            res['precision'].append(round(best_f1_df['precision'].to_list()[0],5))        
+            res['recall'].append(round(best_f1_df['recall'].to_list()[0],5))  
+            res['f1'].append(round(best_f1_df['f1'].to_list()[0],5))   
             res['models'].append(m)
         res_df = pd.DataFrame(res)
         res_df.to_csv(os.path.join(metric_dir,f"summary/{d}_metric.csv"))
@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
     metric_dir = "run_scripts/out/metric"
     # models = [ "DAGMM", "lstmod", "LSTMAE","LSTMVAE",  "telemanom", "deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM","LSTMGMM"]
-    models = ["LSTMVAEGMM"]
+    models = ["LSTMGMM"]
     
     for m in models:
         merge_smd_metric(metric_dir=metric_dir,model=m)
