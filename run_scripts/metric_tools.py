@@ -67,11 +67,11 @@ def multi_threshold_eval(args,pred_score,label):
                                     label=label,
                                     threshold=threshold)
         f1, precision, recall, TP, TN, FP, FN = calc_point2point(adjust_predict,label)
-        res['contamination'].append(round(contamination,4))
-        res['thresholds'].append(round(threshold))
-        res['precision'].append(round(precision,4))
-        res['recall'].append(round(recall,4))
-        res['f1'].append(round(f1, 4))
+        res['contamination'].append(round(contamination,5))
+        res['thresholds'].append(round(threshold,5))
+        res['precision'].append(round(precision,5))
+        res['recall'].append(round(recall,5))
+        res['f1'].append(round(f1, 5))
     res_df = pd.DataFrame(res)
     print(res_df)
     os.makedirs(args['metrics_dir'],exist_ok=True)
@@ -79,10 +79,9 @@ def multi_threshold_eval(args,pred_score,label):
     return res
 
 
-def merge_smd_metric(metric_dir,model):
-    columns = ['contamination', 'thresholds', 'precision', 'recall', 'f1']
-    dataset = "SMD"
-    metric_files = glob(f"{metric_dir}/{dataset}_{model}_machine*.csv")
+def merge_smd_metric(metric_dir,model,dataset):
+
+    metric_files = glob(f"{metric_dir}/{dataset}_{model}*.csv")
     res = {'contamination':[],"thresholds":[],'precision':[],'recall':[],'f1':[]}
     df_list = []
     
@@ -99,11 +98,11 @@ def merge_smd_metric(metric_dir,model):
         res['f1'].append(best_f1_df['f1'].tolist()[0]) 
         res['thresholds'].append(best_f1_df['thresholds'].tolist()[0]) 
         
-    res['contamination'] = [round(sum(res['contamination'])/len(res['contamination']),4)]
-    res['precision'] = [round(sum(res['precision'])/len(res['precision']),4)]
-    res['recall'] = [round(sum(res['recall'])/len(res['recall']),4)]
-    res['f1'] = [round(sum(res['f1'])/len(res['f1']),4)]
-    res['thresholds'] = [round(sum(res['thresholds'])/len(res['thresholds']),4)]
+    res['contamination'] = [round(sum(res['contamination'])/len(res['contamination']),5)]
+    res['precision'] = [round(sum(res['precision'])/len(res['precision']),5)]
+    res['recall'] = [round(sum(res['recall'])/len(res['recall']),5)]
+    res['f1'] = [round(sum(res['f1'])/len(res['f1']),5)]
+    res['thresholds'] = [round(sum(res['thresholds'])/len(res['thresholds']),5)]
     
     res_df = pd.DataFrame(res)
     
@@ -137,8 +136,14 @@ if __name__ == "__main__":
     models = ["LSTMGMM"]
     
     for m in models:
-        merge_smd_metric(metric_dir=metric_dir,model=m)
-    
+        dataset="SMD"
+        metric_files = glob(f"{metric_dir}/{dataset}_{m}*.csv")
+        if len(metric_files) > 1:
+            merge_smd_metric(metric_dir=metric_dir,model=m,dataset=dataset)
+        dataset="ASD"
+        metric_files = glob(f"{metric_dir}/{dataset}_{m}*.csv")
+        if len(metric_files) > 1:
+            merge_smd_metric(metric_dir=metric_dir,model=m,dataset=dataset)
     
     # merge_all_metric(metric_dir=metric_dir,models=models)
                                 

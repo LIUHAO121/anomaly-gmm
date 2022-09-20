@@ -66,6 +66,10 @@ machine_names = ["machine-1-1", "machine-1-2","machine-1-3", "machine-1-4",  "ma
 #                    "machine-2-3",  "machine-2-4","machine-2-5", "machine-2-6",  "machine-2-9", 
 #                  "machine-3-1",  "machine-3-2",  "machine-3-5","machine-3-7",    "machine-3-9", "machine-3-10"]
 
+
+# machine_names = ["machine-1-5","machine-3-5"]
+
+
 train_suffix = "_train.pkl"
 test_suffix = "_test.pkl"
 test_label_suffix = "_test_label.pkl"
@@ -131,6 +135,7 @@ if __name__ == "__main__":
     models = args.models
     print("models: ", models)
     print("num gmm: ",args.num_gmm)
+    print("position: ",args.position)
     for m in models:
         for mn in machine_names:
             train(model=m, dataset_name=dataset_name, dataset_dim=dataset_dim, prepare_data=prepare_data, machine_name=mn, num_gmm=args.num_gmm, position=args.position)

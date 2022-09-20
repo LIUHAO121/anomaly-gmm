@@ -388,10 +388,6 @@ class LstmGMM(BaseDetector):
         
         
         matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right)) # (i,t)
-        # e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
-        # e = tf.reduce_sum((e_i_k) * gamma[:,-1,:],axis=-1)
-        # e=tf.reshape(e,[-1,1])
-        # return -tf.math.log(e)
         e = tf.reduce_sum(matrix_matmul * gamma[:,-1,:],axis=-1)
         e = tf.reshape(e,[-1,1])
         return e
@@ -421,13 +417,11 @@ class LstmGMM(BaseDetector):
         
         # estimate model
         est_input = Input(shape=(None, self.n_features_,), name="est_input")
-        # est_outputs = Dense(self.n_features_, activation=self.output_activation)(est_input)
-        # est_outputs = Dense(16, activation=self.output_activation)(est_input)
-        # est_outputs = Dense(8, activation=self.output_activation)(est_input)
-        # est_outputs = Dense(self.num_gmm)(est_outputs) # (i,t,k）
+
         est_outputs = LSTM(self.n_features_, return_sequences=True,dropout = self.dropout_rate)(est_input)
         est_outputs = LSTM(16, return_sequences=True,dropout = self.dropout_rate)(est_outputs)
-        est_outputs = LSTM(self.num_gmm,return_sequences=True,dropout = self.dropout_rate)(est_outputs)
+
+        est_outputs = Dense(self.num_gmm)(est_outputs) # (i,t,k）
         est_outputs = tf.nn.softmax(est_outputs)
         
         est_model = Model(est_input,est_outputs) 
