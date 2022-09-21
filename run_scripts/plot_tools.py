@@ -55,6 +55,10 @@ def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,sav
     df = df.reset_index()
     data_len = df.shape[0]
     img_num = data_len//segment
+    rolling_size=args['contamination']
+    predict_rolling_series = predict.rolling(rolling_size,center=True).max()
+    predict_rolling_series[predict_rolling_series.isnull()]=predict[predict_rolling_series.isnull()]
+        
     for i in range(img_num):
         start=i*segment
         end = (i+1)*segment
@@ -63,6 +67,7 @@ def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,sav
         
         part_predict = predict[start:end]
         part_threshold=threshold[start:end]
+        part_rolling = predict_rolling_series[start:end]
         part_name = "{}_{}".format(start,end)
         
         fig=plt.figure(facecolor='white',figsize=(35,20))
@@ -72,7 +77,8 @@ def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,sav
         plt.legend(fontsize=25,loc="upper right")
         ax2 = fig.add_subplot(212)
         ax2.plot(part_predict, color='blue', label = 'Score', linewidth = 0.5)
-        ax2.plot(part_threshold, color='green', label = 'threshold', linewidth = 1.5)
+        # ax2.plot(part_threshold, color='green', label = 'threshold', linewidth = 1.5)
+        ax2.plot(part_rolling,color="red",label="threshold",linewidth = 1.5)
         plt.legend(fontsize=25, loc="upper right")
         if args.get('sub_dataset',None) != None:
             save_path = os.path.join(save_dir,"{}_{}_{}_{}_{}_predict.png".format(args['dataset_name'],args['sub_dataset'],args['model'],args['sub_dataset'],part_name))
@@ -171,8 +177,11 @@ def plot_after_train(args,df,predict):
     """
     df 必须包括标注列
     """
-    threshold =  np.percentile(predict, 100 * (1 - args['contamination']))
+    # threshold =  np.percentile(predict, 100 * (1 - args['contamination']))
+    threshold =  np.percentile(predict, 100 * (1 - 0.1))
     threshod_series = pd.Series([threshold for i in range(len(predict))])
+      # for drawing 
+    
     for col in df.columns[:-1][:1]:
         os.makedirs(os.path.join(args['plot_dir'],args['dataset_name']),exist_ok=True)
         plot_predict_to_many_imgs(args,df, 

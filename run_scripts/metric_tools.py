@@ -25,9 +25,7 @@ def calc_point2point(predict, actual):
 
 
 def adjust_predicts(args, pred, label,threshold):
-    
     assert len(pred) == len(label),"len(pred) = {},len(label) = {} ".format(len(pred),len(label))
-
     predict = pred >= threshold
     predict = np.asarray(predict).astype(int)
     label = np.asarray(label)
@@ -51,11 +49,9 @@ def adjust_predicts(args, pred, label,threshold):
             anomaly_state = False
         if anomaly_state:
             predict[i] = True
-
     return predict
-    
-    
-    
+  
+
 def multi_threshold_eval(args,pred_score,label):
     res = {"contamination":[],"thresholds":[],"precision":[],"recall":[],"f1":[]}
     contaminations = args['contaminations']
@@ -66,12 +62,13 @@ def multi_threshold_eval(args,pred_score,label):
                                     pred=pred_score,
                                     label=label,
                                     threshold=threshold)
+
         f1, precision, recall, TP, TN, FP, FN = calc_point2point(adjust_predict,label)
         res['contamination'].append(round(contamination,5))
         res['thresholds'].append(round(threshold,5))
-        res['precision'].append(round(precision,5))
-        res['recall'].append(round(recall,5))
-        res['f1'].append(round(f1, 5))
+        res['precision'].append(round(precision,4))
+        res['recall'].append(round(recall,4))
+        res['f1'].append(round(f1, 4))
     res_df = pd.DataFrame(res)
     print(res_df)
     os.makedirs(args['metrics_dir'],exist_ok=True)
@@ -79,10 +76,62 @@ def multi_threshold_eval(args,pred_score,label):
     return res
 
 
+def adjust_rolling_mean_predicts(args, pred, label,rolling_size=5):
+    assert len(pred) == len(label),"len(pred) = {},len(label) = {} ".format(len(pred),len(label))
+    pred_rolling = pred.rolling(rolling_size,center=True).max()
+
+    predict = pred >= pred_rolling 
+    
+    predict = np.asarray(predict).astype(int)
+    label = np.asarray(label)
+    latency = 0
+
+    actual = label
+    anomaly_state = False
+    anomaly_count = 0
+    for i in range(len(predict)):
+        if actual[i] and predict[i] and not anomaly_state:
+                anomaly_state = True
+                anomaly_count += 1
+                for j in range(i, 0, -1):
+                    if not actual[j]:
+                        break
+                    else:
+                        if not predict[j]:
+                            predict[j] = True
+                            latency += 1
+        elif not actual[i]:
+            anomaly_state = False
+        if anomaly_state:
+            predict[i] = True
+    return predict  
+
+
+def multi_rolling_size_eval(args, pred_score,label):
+    res = {"contamination":[],"precision":[],"recall":[],"f1":[]}
+    rolling_sizes = args['rolling_sizes']
+    for rolling_size in rolling_sizes:
+        adjust_predict = adjust_rolling_mean_predicts(
+            args=args,
+            pred=pred_score,
+            label=label,
+            rolling_size=rolling_size,
+        )
+        f1, precision, recall, TP, TN, FP, FN = calc_point2point(adjust_predict,label)
+        res['contamination'].append(round(rolling_size,5))
+        res['precision'].append(round(precision,4))
+        res['recall'].append(round(recall,4))
+        res['f1'].append(round(f1, 4))
+    res_df = pd.DataFrame(res)
+    print(res_df)
+    os.makedirs(args['metrics_dir'],exist_ok=True)
+    res_df.to_csv(os.path.join(args['metrics_dir'],"{}_{}_{}.csv".format(args['dataset_name'], args['model'], args['sub_dataset'])))
+    return res
+
 def merge_smd_metric(metric_dir,model,dataset):
 
     metric_files = glob(f"{metric_dir}/{dataset}_{model}*.csv")
-    res = {'contamination':[],"thresholds":[],'precision':[],'recall':[],'f1':[]}
+    res = {'contamination':[],'precision':[],'recall':[],'f1':[]}
     df_list = []
     
     for f in metric_files:
@@ -96,13 +145,13 @@ def merge_smd_metric(metric_dir,model,dataset):
         res['precision'].append(best_f1_df['precision'].tolist()[0])        
         res['recall'].append(best_f1_df['recall'].tolist()[0])  
         res['f1'].append(best_f1_df['f1'].tolist()[0]) 
-        res['thresholds'].append(best_f1_df['thresholds'].tolist()[0]) 
+        # res['thresholds'].append(best_f1_df['thresholds'].tolist()[0]) 
         
     res['contamination'] = [round(sum(res['contamination'])/len(res['contamination']),5)]
-    res['precision'] = [round(sum(res['precision'])/len(res['precision']),5)]
-    res['recall'] = [round(sum(res['recall'])/len(res['recall']),5)]
-    res['f1'] = [round(sum(res['f1'])/len(res['f1']),5)]
-    res['thresholds'] = [round(sum(res['thresholds'])/len(res['thresholds']),5)]
+    res['precision'] = [round(sum(res['precision'])/len(res['precision']),4)]
+    res['recall'] = [round(sum(res['recall'])/len(res['recall']),4)]
+    res['f1'] = [round(sum(res['f1'])/len(res['f1']),4)]
+    # res['thresholds'] = [round(sum(res['thresholds'])/len(res['thresholds']),5)]
     
     res_df = pd.DataFrame(res)
     
@@ -119,9 +168,9 @@ def merge_all_metric(metric_dir,models):
             df = pd.read_csv(metric_file)
             best_f1_df = df[df['f1']==df['f1'].max()]
             res['contamination'].append(round(best_f1_df['contamination'].to_list()[0],5))
-            res['precision'].append(round(best_f1_df['precision'].to_list()[0],5))        
-            res['recall'].append(round(best_f1_df['recall'].to_list()[0],5))  
-            res['f1'].append(round(best_f1_df['f1'].to_list()[0],5))   
+            res['precision'].append(round(best_f1_df['precision'].to_list()[0],4))        
+            res['recall'].append(round(best_f1_df['recall'].to_list()[0],4))  
+            res['f1'].append(round(best_f1_df['f1'].to_list()[0],4))   
             res['models'].append(m)
         res_df = pd.DataFrame(res)
         res_df.to_csv(os.path.join(metric_dir,f"summary/{d}_metric.csv"))
@@ -148,7 +197,9 @@ def merge_pai_out_according_version(version,model,pai_out_dir,metric_dir):
                 best_f1 = round(metric_df['f1'].max(),5)
                 out[dataset].append(best_f1)
     out = pd.DataFrame(out)         
-    out.to_csv(os.path.join(metric_dir,f"summary/{version}_{model}.csv"))
+    summary_dir = os.path.join(metric_dir,"summary")
+    os.makedirs(summary_dir,exist_ok=True)
+    out.to_csv(os.path.join(summary_dir,f"{version}_{model}.csv"))
     
     
 if __name__ == "__main__":
@@ -169,9 +220,9 @@ if __name__ == "__main__":
     
     # merge_all_metric(metric_dir=metric_dir,models=models)
     
-    # merge_pai_out_according_version(
-    #                     version="ChangeGMMNum",
-    #                     model="LSTMGMM",
-    #                     pai_out_dir="/mnt/nfs-storage/user/lhao/anomal/pai_out/",
-    #                     metric_dir=metric_dir
-    #                     )              
+    merge_pai_out_according_version(
+                        version="ChangeGMMNum",
+                        model="LSTMGMM",
+                        pai_out_dir="/mnt/nfs-storage/user/lhao/anomal/pai_out/",
+                        metric_dir=metric_dir
+                        )              

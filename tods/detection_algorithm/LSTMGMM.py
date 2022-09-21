@@ -10,7 +10,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential, Model
-from tensorflow.keras.layers import Dense, Dropout , LSTM, Lambda,Input
+from tensorflow.keras.layers import Dense, Dropout , LSTM, Lambda,Input,ReLU
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.losses import mean_squared_error
 from tensorflow.keras import backend as K
@@ -387,11 +387,11 @@ class LstmGMM(BaseDetector):
         z_c_right = z_centered_last[:,:,:,None]
         
         
-        matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right)) # (i,t)
+        matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right)) # (i,k)
         e = tf.reduce_sum(matrix_matmul * gamma[:,-1,:],axis=-1)
         e = tf.reshape(e,[-1,1])
         return tf.math.log(1+e)
-        # return e
+      
   
 
     def _build_model(self):
@@ -421,7 +421,6 @@ class LstmGMM(BaseDetector):
 
         est_outputs = LSTM(self.n_features_, return_sequences=True,dropout = self.dropout_rate)(est_input)
         est_outputs = LSTM(16, return_sequences=True,dropout = self.dropout_rate)(est_outputs)
-
         est_outputs = Dense(self.num_gmm)(est_outputs) # (i,t,k）
         est_outputs = tf.nn.softmax(est_outputs)
         

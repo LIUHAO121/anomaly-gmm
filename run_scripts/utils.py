@@ -17,7 +17,7 @@ from tods.sk_interface.detection_algorithm.LSTMAEGMM_skinterface import LSTMAEGM
 from tods.sk_interface.detection_algorithm.LSTMGMM_skinterface import LSTMGMMSKI
 from tods.sk_interface.detection_algorithm.LSTMVAEGMM2_skinterface import LSTMVAEGMM2SKI
 from tods.sk_interface.detection_algorithm.LSTMVAEMTDF_skinterface import LSTMVAEMTDFSKI
-from run_scripts.metric_tools import multi_threshold_eval
+from run_scripts.metric_tools import multi_threshold_eval,multi_rolling_size_eval
 from run_scripts.plot_tools import plot_after_train,plot_zspace_3d,plot_predict_to_many_imgs
 
     
@@ -31,7 +31,7 @@ def train_step(args,transformer_DL,train_np,test_np,test_with_label_df):
     y_true = test_with_label_df[args['anomal_col']]
     y_score = pd.Series(prediction_score_DL.flatten())
         
-    res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
+    res = multi_rolling_size_eval(args=args, pred_score=y_score, label=y_true)
     
     model_path = os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
     if args['model'] not in ['DAGMM',"lstmod", "LSTMAE", "telemanom"]:
@@ -79,7 +79,7 @@ def eval_step(args,transformer_DL,test_np,test_with_label_df):
         y_score = pd.Series(pred_scores.flatten())
         print("> "* 50)
         print("run eval ....")
-        res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
+        res = multi_rolling_size_eval(args=args, pred_score=y_score, label=y_true)
         
         best_f1_index = res['f1'].index(max(res['f1']))
         
@@ -341,7 +341,8 @@ lstmvaegmm_args = {
     "plot_cols":['9','10','12'],
     "use_important_cols":False,
     "sub_dataset":"null",
-    "position":99   # the point position of a timeseries for calculate energy
+    "position":99,   # the point position of a timeseries for calculate energy
+    
 }
 
 lstmvaemtdf_args = {
@@ -389,7 +390,8 @@ lstmgmm_args = {
     "important_cols":['1','9','10','12','13','14','15','23'],
     "plot_cols":['9','10','12'],
     "use_important_cols":False,
-    "sub_dataset":"null"
+    "sub_dataset":"null",
+    "rolling_sizes":[50,100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1500, 2000, 3000]  # for eval, center style, consider before and after information
 }
 
 def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=None,position=100):
