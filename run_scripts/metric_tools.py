@@ -127,6 +127,28 @@ def merge_all_metric(metric_dir,models):
         res_df.to_csv(os.path.join(metric_dir,f"summary/{d}_metric.csv"))
     
     
+def merge_pai_out_according_version(version,model,pai_out_dir,metric_dir):    
+    """
+    根据训练版本号合并数据,只用于消融实验结果汇总
+    """
+    res_documents = os.listdir(pai_out_dir)
+    datasets=["MSL","SMAP","PSM","SWaT","SMD","ASD"]
+    out={"variable":[]}
+    for d in datasets:
+        out[d]=[]
+    for doc in res_documents:
+        if version in doc:
+            doc_dir = os.path.join(pai_out_dir, doc)
+            doc_metric_dir = os.path.join(doc_dir,"metric")
+            variable_value = doc.split("_")[-1]
+            out['variable'].append(variable_value)
+            for dataset in datasets:
+                metric_file = os.path.join(doc_metric_dir,"{}_{}_null.csv".format(dataset,model))
+                metric_df = pd.read_csv(metric_file)
+                best_f1 = round(metric_df['f1'].max(),5)
+                out[dataset].append(best_f1)
+    out = pd.DataFrame(out)         
+    out.to_csv(os.path.join(metric_dir,f"summary/{version}_{model}.csv"))
     
     
 if __name__ == "__main__":
@@ -146,4 +168,10 @@ if __name__ == "__main__":
             merge_smd_metric(metric_dir=metric_dir,model=m,dataset=dataset)
     
     # merge_all_metric(metric_dir=metric_dir,models=models)
-                                
+    
+    # merge_pai_out_according_version(
+    #                     version="ChangeGMMNum",
+    #                     model="LSTMGMM",
+    #                     pai_out_dir="/mnt/nfs-storage/user/lhao/anomal/pai_out/",
+    #                     metric_dir=metric_dir
+    #                     )              

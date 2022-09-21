@@ -390,7 +390,8 @@ class LstmGMM(BaseDetector):
         matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right)) # (i,t)
         e = tf.reduce_sum(matrix_matmul * gamma[:,-1,:],axis=-1)
         e = tf.reshape(e,[-1,1])
-        return e
+        return tf.math.log(1+e)
+        # return e
   
 
     def _build_model(self):
