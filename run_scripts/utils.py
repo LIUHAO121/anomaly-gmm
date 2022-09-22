@@ -377,6 +377,8 @@ lstmgmm_args = {
     "plot_cols":['9','10','12'],
     "use_important_cols":False,
     "sub_dataset":"null",
+    "contaminations":[0.0001 * i for i in range(0,500,10)],
+    "contamination": 0.01,
     "rolling_sizes":[50,100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1500, 2000, 3000]  # for eval, center style, consider before and after information
 }
 
