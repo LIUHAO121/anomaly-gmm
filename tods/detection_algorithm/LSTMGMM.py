@@ -360,7 +360,7 @@ class LstmGMM(BaseDetector):
 
 
     def energy_loss(self, energy_out):
-        return   K.mean(energy_out) 
+        return  K.mean(energy_out) 
       
 
 

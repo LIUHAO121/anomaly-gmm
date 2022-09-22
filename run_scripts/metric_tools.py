@@ -181,13 +181,13 @@ def merge_pai_out_according_version(version,model,pai_out_dir,metric_dir):
     根据训练版本号合并数据,只用于消融实验结果汇总
     """
     res_documents = os.listdir(pai_out_dir)
-    # datasets=["MSL","SMAP","PSM","SWaT","SMD","ASD"]
-    datasets =["SMD"]
+    datasets=["MSL","SMAP","PSM","SWaT","SMD","ASD"]
+    # datasets = ["SMD"]
     out={"variable":[]}
     for d in datasets:
         out[d]=[]
     for doc in res_documents:
-        if version in doc:
+        if version in doc and model in doc:
             doc_dir = os.path.join(pai_out_dir, doc)
             doc_metric_dir = os.path.join(doc_dir,"metric")
             variable_value = doc.split("_")[-1]
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     # merge_all_metric(metric_dir=metric_dir,models=models)
     
     merge_pai_out_according_version(
-                        version="log",
+                        version="RollingMax",
                         model="LSTMGMM",
                         pai_out_dir="/mnt/nfs-storage/user/lhao/anomal/pai_out/",
                         metric_dir=metric_dir

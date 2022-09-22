@@ -56,7 +56,7 @@ def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,sav
     data_len = df.shape[0]
     img_num = data_len//segment
     rolling_size = args['contamination']
-    predict_rolling_series = predict.rolling(100,center=True).max()
+    predict_rolling_series = predict.rolling(rolling_size,center=True).max()
     predict_rolling_series[predict_rolling_series.isnull()] = predict[predict_rolling_series.isnull()]
         
     for i in range(img_num):
@@ -184,14 +184,15 @@ def plot_after_train(args,df,predict):
     
     for col in df.columns[:-1][:1]:
         os.makedirs(os.path.join(args['plot_dir'],args['dataset_name']),exist_ok=True)
-        plot_predict_to_many_imgs(args,df, 
-                     col_name=col,
-                     anomal_col=args['anomal_col'], 
-                     predict=predict, 
-                     threshold=threshod_series,
-                     save_dir=os.path.join(args['plot_dir'],args['dataset_name']),
-                     segment=500,
-                     
+        plot_predict_to_many_imgs(
+                    args,
+                    df, 
+                    col_name=col,
+                    anomal_col=args['anomal_col'], 
+                    predict=predict, 
+                    threshold=threshod_series,
+                    save_dir=os.path.join(args['plot_dir'],args['dataset_name']),
+                    segment=500
                      )
 
 
