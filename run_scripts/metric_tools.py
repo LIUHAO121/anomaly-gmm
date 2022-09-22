@@ -181,7 +181,8 @@ def merge_pai_out_according_version(version,model,pai_out_dir,metric_dir):
     根据训练版本号合并数据,只用于消融实验结果汇总
     """
     res_documents = os.listdir(pai_out_dir)
-    datasets=["MSL","SMAP","PSM","SWaT","SMD","ASD"]
+    # datasets=["MSL","SMAP","PSM","SWaT","SMD","ASD"]
+    datasets =["SMD"]
     out={"variable":[]}
     for d in datasets:
         out[d]=[]
@@ -205,7 +206,6 @@ def merge_pai_out_according_version(version,model,pai_out_dir,metric_dir):
 if __name__ == "__main__":
 
     metric_dir = "run_scripts/out/metric"
-    # models = [ "DAGMM", "lstmod", "LSTMAE","LSTMVAE",  "telemanom", "deeplog", "LSTMVAEGMM","LSTMAEGMM","GRUVAEGMM","LSTMVAEDISTGMM","LSTMGMM"]
     models = ["LSTMGMM"]
     
     for m in models:
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     # merge_all_metric(metric_dir=metric_dir,models=models)
     
     merge_pai_out_according_version(
-                        version="ChangeGMMNum",
+                        version="log",
                         model="LSTMGMM",
                         pai_out_dir="/mnt/nfs-storage/user/lhao/anomal/pai_out/",
                         metric_dir=metric_dir

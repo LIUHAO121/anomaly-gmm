@@ -55,43 +55,26 @@ def eval_step(args,transformer_DL,test_np,test_with_label_df):
     print("> "* 50)
     print("run predict ... ")
     pred_scores=None
-    if args["model"] == "LSTMVAEGMM2":
-        energy_latent = transformer_DL.primitives[0]._clf.latent_predict(model_path,test_np)
-        samples,dim = energy_latent.shape
-        y_true = np.array(test_with_label_df[args['anomal_col']]).reshape(-1,1)[-samples:,:]
-        # energy_latent_label = np.concatenate((energy_latent,y_true),axis=1)
-        # energy_latent_label_df = pd.DataFrame(energy_latent_label)
-        # columns = ["energy","latent_1","latent_2",args['anomal_col']]
-        # energy_latent_label_df.columns = columns
-        # energy_latent_label_df[args['anomal_col']] = energy_latent_label_df[args['anomal_col']].astype(int)
-        # save_path = os.path.join(args['plot_dir'],args['dataset_name'],"{}_{}_{}_3d.png".format(args['dataset_name'],args['model'],args['sub_dataset']))
-        # plot_zspace_3d(energy_latent_label_df,col_names=columns[:3],anomal_col=args['anomal_col'],save_path=save_path)
-        
-        plot_after_train(
-                    args,
-                    df=test_with_label_df.iloc[-samples:,:],
-                    predict=energy_latent[:,0][-samples:]
-                        )
-        
-    else:
-        pred_scores = transformer_DL.primitives[0]._clf.load_decision_function(model_path,test_np)
-        y_true = test_with_label_df[args['anomal_col']]
-        y_score = pd.Series(pred_scores.flatten())
-        print("> "* 50)
-        print("run eval ....")
-        res = multi_rolling_size_eval(args=args, pred_score=y_score, label=y_true)
-        
-        best_f1_index = res['f1'].index(max(res['f1']))
-        
-        args['contamination'] = res['contamination'][best_f1_index]
-        
-        print("> "* 50)
-        print("run plot ....")
-        plot_after_train(
-                    args,
-                    df=test_with_label_df,
-                    predict=y_score
-                        )
+
+    pred_scores = transformer_DL.primitives[0]._clf.load_decision_function(model_path,test_np)
+    y_true = test_with_label_df[args['anomal_col']]
+    y_score = pd.Series(pred_scores.flatten())
+    print("> "* 50)
+    print("run eval ....")
+    
+    res = multi_rolling_size_eval(args=args, pred_score=y_score, label=y_true)
+    
+    best_f1_index = res['f1'].index(max(res['f1']))
+    
+    args['contamination'] = res['contamination'][best_f1_index]
+    
+    print("> "* 50)
+    print("run plot ....")
+    plot_after_train(
+                args,
+                df=test_with_label_df,
+                predict=y_score
+                    )
     
     
 dagmm_args = {
@@ -216,7 +199,9 @@ deeplog_args = {
     "important_cols":['1','9','10','12','13','14','15','23'],
     "plot_cols":['9','10','12'],
     "use_important_cols":False,
-    "sub_dataset":"null"
+    "sub_dataset":"null",
+    "rolling_sizes":[50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1500, 2000, 3000]  # for eval, center style, consider before and after information
+
 }
 
 lstmvaedistgmm_args = {
@@ -290,7 +275,6 @@ lstmaegmm_args = {
     "use_important_cols":False,
     "sub_dataset":"null"
 }
-
 
 
 lstmvaegmm2_args = {
@@ -417,7 +401,7 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=
     args['dataset_dim'] = dataset_dim
     args['num_gmm']=num_gmm
     args['position'] = position
-    
+    args['contamination'] = 0.01
     train_np=None
     test_np=None
     test_with_label_df=None
@@ -428,6 +412,7 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=
     else:
         train_np, test_np, test_with_label_df = prepare_data(args)  # 已归一化
         
+    print(args)
 
     model2ski = {
         "DAGMM":DAGMMSKI(

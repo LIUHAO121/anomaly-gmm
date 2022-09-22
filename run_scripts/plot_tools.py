@@ -55,9 +55,9 @@ def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,sav
     df = df.reset_index()
     data_len = df.shape[0]
     img_num = data_len//segment
-    rolling_size=args['contamination']
+    rolling_size = args['contamination']
     predict_rolling_series = predict.rolling(rolling_size,center=True).max()
-    predict_rolling_series[predict_rolling_series.isnull()]=predict[predict_rolling_series.isnull()]
+    predict_rolling_series[predict_rolling_series.isnull()] = predict[predict_rolling_series.isnull()]
         
     for i in range(img_num):
         start=i*segment
