@@ -488,8 +488,7 @@ class LstmGMM(BaseDetector):
                                         validation_split=self.validation_size,
                                         verbose=self.verbose).history
         pred_scores = np.zeros([X.shape[0],1])
-        pred_scores[self.window_size-1:] = self.model_.predict(X_train)# 输出的shape 为(n,timestemps,features) 但是要用(n,features)
-
+        pred_scores[self.position: self.position+X.shape[0]+1-self.window_size] = self.model_.predict(X_train)# 输出的shape 为(n,timestemps,features) 但是要用(n,features)
         self.decision_scores_ = pred_scores
         self._process_decision_scores()
         return self
@@ -543,7 +542,7 @@ class LstmGMM(BaseDetector):
         #print(X[0])
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
         pred_scores = np.zeros([X.shape[0],1])
-        pred_scores[self.window_size-1:] = self.model_.predict(X_norm)
+        pred_scores[self.position:self.position+X.shape[0]+1-self.window_size] = self.model_.predict(X_norm)
         return pred_scores
     
     def load_decision_function(self, model_path, X):
@@ -568,5 +567,7 @@ class LstmGMM(BaseDetector):
         #print(X[0])
         X_norm,Y_norm = self._preprocess_data_for_LSTM(X)
         pred_scores = np.zeros([X.shape[0],1])
-        pred_scores[self.window_size-1:] = loaded_model.predict(X_norm)
+        # pred_scores[self.window_size-1:] = loaded_model.predict(X_norm)
+        pred_scores[self.position:self.position + X.shape[0]+1-self.window_size] = loaded_model.predict(X_norm)
+
         return pred_scores
