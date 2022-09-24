@@ -435,11 +435,13 @@ class LstmVAEGMM(BaseDetector):
         z_c_right = z_centered_last[:,:,:,None]
 
         matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right))
-        e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
-        e = tf.reduce_sum((e_i_k) * gamma[:,-1,:],axis=-1)
-        e=tf.reshape(e,[-1,1])
-        return -tf.math.log(e)
-  
+        # e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
+        # e = tf.reduce_sum((e_i_k) * gamma[:,-1,:],axis=-1)
+        # e=tf.reshape(e,[-1,1])
+        # return -tf.math.log(e)
+        e = tf.reduce_sum(matrix_matmul * gamma[:,-1,:],axis=-1)
+        e = tf.reshape(e,[-1,1])
+        return tf.math.log(1+e)
   
         
 
@@ -520,14 +522,14 @@ class LstmVAEGMM(BaseDetector):
         if self.verbose >= 1:
             energy_model.summary()
         
-        energy_out = energy_model([est_outputs, outputs])
+        energy_out = energy_model([est_outputs, inputs])
         
 
         # lstm vae gmm
         lstmvaegmm = Model(inputs, energy_out)
         
         
-        lstmvaegmm.add_loss(self.vae_loss(inputs, outputs, z_mean, z_log, energy_out))
+        lstmvaegmm.add_loss(self.vae_loss(inputs, inputs, z_mean, z_log, energy_out))
         lstmvaegmm.compile(optimizer=self.optimizer)
         if self.verbose >= 1:
             lstmvaegmm.summary()
