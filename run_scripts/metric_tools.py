@@ -187,11 +187,21 @@ def merge_pai_out_according_version(version,model,pai_out_dir,metric_dir):
     for d in datasets:
         out[d]=[]
     for doc in res_documents:
+        
         if version in doc and model in doc:
+            doc_infos = doc.split("_")
+            num_gmm = doc_infos[3]
+            position = doc_infos[-1]  # 暂时
             doc_dir = os.path.join(pai_out_dir, doc)
             doc_metric_dir = os.path.join(doc_dir,"metric")
-            variable_value = doc.split("_")[-1]
-            out['variable'].append(variable_value)
+            variable_value = None
+            if "GMM" in version:
+                variable_value = num_gmm
+            elif "posi" in version:
+                variable_value = position
+            else:
+                variable_value = version
+            out['variable'].append(variable_value) 
             for dataset in datasets:
                 metric_file = os.path.join(doc_metric_dir,"{}_{}_null.csv".format(dataset,model))
                 metric_df = pd.read_csv(metric_file)
@@ -204,9 +214,13 @@ def merge_pai_out_according_version(version,model,pai_out_dir,metric_dir):
     
     
 if __name__ == "__main__":
-
+    import argparse
+    parser = argparse.ArgumentParser(description='Tensorflow Training')
+    parser.add_argument('--models', type=str, nargs='+', default=[])
+    args = parser.parse_args()
+    models = args.models
     metric_dir = "run_scripts/out/metric"
-    models = ["LSTMGMM"]
+    
     
     for m in models:
         dataset="SMD"
@@ -218,11 +232,10 @@ if __name__ == "__main__":
         if len(metric_files) > 1:
             merge_smd_metric(metric_dir=metric_dir,model=m,dataset=dataset)
     
-    # merge_all_metric(metric_dir=metric_dir,models=models)
     
-    merge_pai_out_according_version(
-                        version="position",
-                        model="LSTMGMM",
-                        pai_out_dir="/mnt/nfs-storage/user/lhao/anomal/pai_out/",
-                        metric_dir=metric_dir
-                        )              
+        merge_pai_out_according_version(
+                            version="ChangeGMMNUM",
+                            model=m,
+                            pai_out_dir="/mnt/nfs-storage/user/lhao/anomal/pai_out/",
+                            metric_dir=metric_dir
+                            )              
