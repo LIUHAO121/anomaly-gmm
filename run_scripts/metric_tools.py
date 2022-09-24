@@ -217,6 +217,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Tensorflow Training')
     parser.add_argument('--models', type=str, nargs='+', default=[])
+    parser.add_argument('--version', type=str, default="version")
     args = parser.parse_args()
     models = args.models
     metric_dir = "run_scripts/out/metric"
@@ -233,9 +234,13 @@ if __name__ == "__main__":
             merge_smd_metric(metric_dir=metric_dir,model=m,dataset=dataset)
     
     
+        # 汇总消融实验的结构
         merge_pai_out_according_version(
-                            version="ChangeGMMNUM",
+                            version=args.version,
                             model=m,
                             pai_out_dir="/mnt/nfs-storage/user/lhao/anomal/pai_out/",
                             metric_dir=metric_dir
                             )              
+        
+        
+# python run_scripts/metric_tools.py --models LSTMVAEGMM --version ChangeGMMNUM
