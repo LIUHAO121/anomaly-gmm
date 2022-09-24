@@ -383,7 +383,7 @@ lstmgmm_args = {
     "rolling_sizes":[50,100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1500, 2000, 3000]  # for eval, center style, consider before and after information
 }
 
-def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=None,position=100):
+def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=None,position=99):
     model2args = {
         "DAGMM":dagmm_args,
         "lstmod":lstmod_args,
@@ -519,7 +519,8 @@ def train(model,dataset_name,dataset_dim,prepare_data,machine_name=None,num_gmm=
             hidden_size = model2args["LSTMGMM"]['hidden_size'],
             preprocessing = model2args["LSTMGMM"]["preprocessing"],
             batch_size = model2args["LSTMGMM"]["batch_size"],
-            epochs = model2args["LSTMGMM"]["epochs"]
+            epochs = model2args["LSTMGMM"]["epochs"],
+            position = model2args["LSTMGMM"]["position"]
         ),
         "LSTMVAEGMM2":LSTMVAEGMM2SKI(
             num_gmm = model2args["LSTMVAEGMM2"]["num_gmm"],

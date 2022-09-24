@@ -171,6 +171,11 @@ class Hyperparams(Hyperparams_ODBase):
         description="the number of gmm"
     )
     
+    position = hyperparams.Hyperparameter[int](
+        default=99,
+        semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        description="point location for energy calculate"
+    )
     
     hidden_activation = hyperparams.Enumeration[str](
         values=['relu', 'sigmoid', 'softmax', 'softplus', 'softsign',
@@ -259,7 +264,8 @@ class LSTMGMMPrimitive(UnsupervisedOutlierDetectorBase[Inputs, Outputs, Params, 
                             contamination=hyperparams['contamination'],
                             hidden_activation = hyperparams['hidden_activation'],
                             gamma=hyperparams['gamma'],
-                            capacity=hyperparams['capacity']
+                            capacity=hyperparams['capacity'],
+                            position=hyperparams['position']
                                 )
         
 
@@ -329,7 +335,7 @@ class LstmGMM(BaseDetector):
                  epochs : int =100, batch_size : int =32, dropout_rate : float =0.0,
                  l2_regularizer : float =0.1, validation_size : float =0.1, encoder_neurons=None, decoder_neurons=None,
                  latent_dim=2, hidden_activation='relu',
-                 output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0, num_gmm:int=4,
+                 output_activation='sigmoid',gamma: float=1.0, capacity: float=0.0, num_gmm:int=4,position: int=99,
                  window_size: int = 1, stacked_layers: int  = 1, verbose : int = 1, contamination:int = 0.001):
 
         super(LstmGMM, self).__init__(contamination=contamination)
@@ -356,7 +362,7 @@ class LstmGMM(BaseDetector):
         self.gamma = gamma
         self.capacity = capacity
         self.num_gmm = num_gmm
-        
+        self.position = position
 
 
     def energy_loss(self, energy_out):
@@ -382,7 +388,7 @@ class LstmGMM(BaseDetector):
         mu = tf.einsum('itk,itl->ikl',gamma,z) / gamma_sum[:,:,None]  # (i,k,l) 每个sample之间的mu和sigma都是独立的
           
         z_centered = z[:,:,None,:] - mu[:,None, :, :] # (i,t,k,l)
-        z_centered_last = z_centered[:,-1,:,:]
+        z_centered_last = z_centered[:,self.position,:,:]
         z_c_left = z_centered_last[:,:,None,:]
         z_c_right = z_centered_last[:,:,:,None]
         

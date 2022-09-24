@@ -172,7 +172,7 @@ class Hyperparams(Hyperparams_ODBase):
     )
     
     position = hyperparams.Hyperparameter[int](
-        default=100,
+        default=99,
         semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description="point location for energy calculate"
     )
