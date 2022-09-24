@@ -221,7 +221,7 @@ if __name__ == "__main__":
     # merge_all_metric(metric_dir=metric_dir,models=models)
     
     merge_pai_out_according_version(
-                        version="RollingMax",
+                        version="position",
                         model="LSTMGMM",
                         pai_out_dir="/mnt/nfs-storage/user/lhao/anomal/pai_out/",
                         metric_dir=metric_dir
