@@ -65,21 +65,19 @@ def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,sav
         part_df = df.iloc[start:end,:].reset_index()
         a = part_df.loc[part_df[anomal_col] == 1]
         
-        part_predict = predict[start:end]
-        part_threshold=threshold[start:end]
-        part_rolling = predict_rolling_series[start:end]
+        part_predict = predict[start:end].reset_index()
+        part_threshold=threshold[start:end].reset_index()
+        part_rolling = predict_rolling_series[start:end].reset_index()
         part_name = "{}_{}".format(start,end)
         
         fig=plt.figure(facecolor='white',figsize=(35,20))
         ax1 = fig.add_subplot(211)
         ax1.plot(part_df[col_name], color='black', label = 'Normal', linewidth = 1.5)
         ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s = 20)
-        plt.legend(fontsize=25,loc="upper right")
+        # plt.legend(fontsize=25,loc="upper right")
         ax2 = fig.add_subplot(212)
         ax2.plot(part_predict, color='blue', label = 'Score', linewidth = 0.5)
-        # ax2.plot(part_threshold, color='green', label = 'threshold', linewidth = 1.5)
-        ax2.plot(part_rolling,color="red",label="threshold",linewidth = 1.5)
-        plt.legend(fontsize=25, loc="upper right")
+        # plt.legend(fontsize=25, loc="upper right")
         if args.get('sub_dataset',None) != None:
             save_path = os.path.join(save_dir,"{}_{}_{}_{}_{}_predict.png".format(args['dataset_name'],args['sub_dataset'],args['model'],args['sub_dataset'],part_name))
         else:

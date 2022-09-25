@@ -181,7 +181,7 @@ def merge_pai_out_according_version(version,model,pai_out_dir,metric_dir):
     根据训练版本号合并数据,只用于消融实验结果汇总
     """
     res_documents = os.listdir(pai_out_dir)
-    datasets=["MSL","SMAP","PSM","SWaT","SMD","ASD"]
+    datasets=["MSL","SMAP","SWaT","PSM","SMD","ASD"]
     # datasets = ["SMD"]
     out={"variable":[]}
     for d in datasets:
@@ -243,4 +243,4 @@ if __name__ == "__main__":
                             )              
         
         
-# python run_scripts/metric_tools.py --models LSTMVAEGMM --version ChangeGMMNUM
+# python run_scripts/metric_tools.py --models LSTMVAEGMM --version allpoint
