@@ -430,15 +430,12 @@ class LstmVAEGMM(BaseDetector):
         mu = tf.einsum('itk,itl->ikl',gamma,z) / gamma_sum[:,:,None]  # (i,k,l) 每个sample之间的mu和sigma都是独立的
         
         z_centered = z[:,:,None,:] - mu[:,None, :, :] # (i,t,k,l)
-        z_centered_last = z_centered[:,self.position,:,:]
+        # z_centered_last = z_centered[:,self.position,:,:]
+        z_centered_last = tf.reduce_mean(z_centered, axis=1)
         z_c_left = z_centered_last[:,:,None,:]
         z_c_right = z_centered_last[:,:,:,None]
 
         matrix_matmul = tf.squeeze(tf.matmul(z_c_left,z_c_right))
-        # e_i_k = tf.math.exp(-0.5 * matrix_matmul) # (i,k)
-        # e = tf.reduce_sum((e_i_k) * gamma[:,-1,:],axis=-1)
-        # e=tf.reshape(e,[-1,1])
-        # return -tf.math.log(e)
         e = tf.reduce_sum(matrix_matmul * gamma[:,-1,:],axis=-1)
         e = tf.reshape(e,[-1,1])
         return tf.math.log(1+e)
