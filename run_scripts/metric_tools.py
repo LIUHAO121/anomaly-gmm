@@ -187,7 +187,7 @@ def merge_pai_out_according_version(version,model,pai_out_dir,metric_dir):
     for d in datasets:
         out[d]=[]
     for doc in res_documents:
-        
+
         if version in doc and model in doc:
             doc_infos = doc.split("_")
             num_gmm = doc_infos[3]

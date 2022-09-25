@@ -31,8 +31,8 @@ def train_step(args,transformer_DL,train_np,test_np,test_with_label_df):
     y_true = test_with_label_df[args['anomal_col']]
     y_score = pd.Series(prediction_score_DL.flatten())
         
-    res = multi_rolling_size_eval(args=args, pred_score=y_score, label=y_true)
-    # res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
+    # res = multi_rolling_size_eval(args=args, pred_score=y_score, label=y_true)
+    res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
     
     model_path = os.path.join(args['model_dir'],"{}_{}_{}".format(args['dataset_name'],args['model'],args['sub_dataset']))
     if args['model'] not in ['DAGMM',"lstmod", "LSTMAE", "telemanom"]:
@@ -42,11 +42,11 @@ def train_step(args,transformer_DL,train_np,test_np,test_with_label_df):
     # 可视化之前确定最优阈值 
     best_f1_index = res['f1'].index(max(res['f1']))
     args['contamination'] = res['contamination'][best_f1_index]
-    plot_after_train(
-                args,
-                df=test_with_label_df,
-                predict=y_score
-                     )
+    # plot_after_train(
+    #             args,
+    #             df=test_with_label_df,
+    #             predict=y_score
+    #                  )
     
     
 def eval_step(args,transformer_DL,test_np,test_with_label_df):
@@ -64,8 +64,8 @@ def eval_step(args,transformer_DL,test_np,test_with_label_df):
     print("> "* 50)
     print("run eval ....")
     
-    res = multi_rolling_size_eval(args=args, pred_score=y_score, label=y_true)
-    # res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
+    # res = multi_rolling_size_eval(args=args, pred_score=y_score, label=y_true)
+    res = multi_threshold_eval(args=args, pred_score=y_score, label=y_true)
     
     best_f1_index = res['f1'].index(max(res['f1']))
     
@@ -73,11 +73,11 @@ def eval_step(args,transformer_DL,test_np,test_with_label_df):
     
     print("> "* 50)
     print("run plot ....")
-    plot_after_train(
-                args,
-                df=test_with_label_df,
-                predict=y_score
-                    )
+    # plot_after_train(
+    #             args,
+    #             df=test_with_label_df,
+    #             predict=y_score
+    #                 )
     
     
 dagmm_args = {
