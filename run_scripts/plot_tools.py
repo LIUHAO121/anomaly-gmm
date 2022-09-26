@@ -51,7 +51,7 @@ def plot_predict(df,col_name,anomal_col,predict,threshold,save_path):
     print("save picture {} ...".format(save_path))
     
 
-def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,save_dir,segment=500):
+def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,save_dir,segment=400):
     df = df.reset_index()
     data_len = df.shape[0]
     img_num = data_len//segment
@@ -62,22 +62,22 @@ def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,sav
     for i in range(img_num):
         start=i*segment
         end = (i+1)*segment
-        part_df = df.iloc[start:end,:].reset_index()
+        part_df = df.iloc[start:end,:].reset_index(drop=True) #不要尝试在数据帧列中插入索引
         a = part_df.loc[part_df[anomal_col] == 1]
         
-        part_predict = predict[start:end].reset_index()
-        part_threshold=threshold[start:end].reset_index()
-        part_rolling = predict_rolling_series[start:end].reset_index()
+        part_predict = predict[start:end]
+        part_threshold=threshold[start:end].reset_index(drop=True)
+        part_rolling = predict_rolling_series[start:end].reset_index(drop=True)
         part_name = "{}_{}".format(start,end)
         
-        fig=plt.figure(facecolor='white',figsize=(35,20))
+        fig=plt.figure(facecolor='white',figsize=(30,25))
         ax1 = fig.add_subplot(211)
-        ax1.plot(part_df[col_name], color='black', label = 'Normal', linewidth = 1.5)
-        ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s = 20)
-        # plt.legend(fontsize=25,loc="upper right")
+        ax1.plot(part_df[col_name], color='black', label = 'Normal', linewidth = 2)
+        ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s =30)
+
         ax2 = fig.add_subplot(212)
-        ax2.plot(part_predict, color='blue', label = 'Score', linewidth = 0.5)
-        # plt.legend(fontsize=25, loc="upper right")
+        ax2.plot(part_predict, color='blue', label = 'Score', linewidth = 2)
+
         if args.get('sub_dataset',None) != None:
             save_path = os.path.join(save_dir,"{}_{}_{}_{}_{}_predict.png".format(args['dataset_name'],args['sub_dataset'],args['model'],args['sub_dataset'],part_name))
         else:

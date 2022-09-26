@@ -506,7 +506,7 @@ class LstmVAEGMM(BaseDetector):
         if self.verbose >= 1:
             est_model.summary()
             
-        est_outputs = est_model(outputs) # gamma
+        mixture_weights = est_model(outputs) # gamma
         
         # energy calculate
         energy_input1 = Input(shape=(None, self.num_gmm,), name="energy_input1")
@@ -518,7 +518,7 @@ class LstmVAEGMM(BaseDetector):
         if self.verbose >= 1:
             energy_model.summary()
         
-        energy_out = energy_model([est_outputs, inputs])
+        energy_out = energy_model([mixture_weights, inputs])
         
 
         # lstm vae gmm

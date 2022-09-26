@@ -1,20 +1,4 @@
-from scipy.stats.mstats import zscore
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import classification_report
-from tods.sk_interface.detection_algorithm.Telemanom_skinterface import TelemanomSKI
-from tods.sk_interface.detection_algorithm.DeepLog_skinterface import DeepLogSKI
-from tods.sk_interface.detection_algorithm.LSTMODetector_skinterface import LSTMODetectorSKI
-from tods.sk_interface.detection_algorithm.AutoEncoder_skinterface import AutoEncoderSKI
-from tods.sk_interface.detection_algorithm.VariationalAutoEncoder_skinterface import VariationalAutoEncoderSKI
-from tods.sk_interface.detection_algorithm.LSTMAE_skinterface import LSTMAESKI
-from tods.sk_interface.detection_algorithm.DAGMM_skinterface import DAGMMSKI
-from tods.sk_interface.detection_algorithm.LSTMVAEGMM_skinterface import LSTMVAEGMMSKI
-from tods.sk_interface.detection_algorithm.LSTMVAEDISTGMM_skinterface import LSTMVAEDISTGMMSKI
-from tods.sk_interface.detection_algorithm.GRUVAEGMM_skinterface import GRUVAEGMMSKI
-from tods.sk_interface.detection_algorithm.LSTMAEGMM_skinterface import LSTMAEGMMSKI
-from sklearn.preprocessing import MinMaxScaler, QuantileTransformer
+
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.metrics import precision_recall_curve
@@ -39,7 +23,7 @@ import pickle
 
 from run_scripts.plot_tools import plot_anomal_multi_columns,plot_anomal_multi_columns_3d,plot_multi_columns,plot_one_column_with_label,plot_predict, plot_after_train,plot_before_train
 from run_scripts.metric_tools import calc_point2point, adjust_predicts,multi_threshold_eval
-from run_scripts.utils import train_step,eval_step,train
+from run_scripts.utils import train
 
 import tensorflow as tf
 from tensorflow import keras
@@ -99,7 +83,7 @@ if __name__ == "__main__":
     
     import argparse
     parser = argparse.ArgumentParser(description='Tensorflow Training')
-    parser.add_argument('--models', type=str, nargs='+', default=[],help="train models")
+    parser.add_argument('--models', type=str, nargs='+', default=["LSTMVAEGMM"],help="train models")
     parser.add_argument('--num_gmm', type=int, default=4,help="number of gmm")
     parser.add_argument('--position', type=int, default=99,help="location of a timepoint in a timeseries for energy calculate")
     args = parser.parse_args()
