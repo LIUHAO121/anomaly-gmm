@@ -51,7 +51,7 @@ def plot_predict(df,col_name,anomal_col,predict,threshold,save_path):
     print("save picture {} ...".format(save_path))
     
 
-def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,save_dir,segment=400):
+def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,save_dir,segment=150):
     df = df.reset_index()
     data_len = df.shape[0]
     img_num = data_len//segment
@@ -64,13 +64,14 @@ def plot_predict_to_many_imgs(args, df,col_name,anomal_col,predict,threshold,sav
         end = (i+1)*segment
         part_df = df.iloc[start:end,:].reset_index(drop=True) #不要尝试在数据帧列中插入索引
         a = part_df.loc[part_df[anomal_col] == 1]
-        
+        if a.shape[0]==0:
+            continue
         part_predict = predict[start:end]
         part_threshold=threshold[start:end].reset_index(drop=True)
         part_rolling = predict_rolling_series[start:end].reset_index(drop=True)
         part_name = "{}_{}".format(start,end)
         
-        fig=plt.figure(facecolor='white',figsize=(30,25))
+        fig=plt.figure(facecolor='white',figsize=(20,10))
         ax1 = fig.add_subplot(211)
         ax1.plot(part_df[col_name], color='black', label = 'Normal', linewidth = 2)
         ax1.scatter(a.index ,a[col_name], color='red', label = 'Anomaly', s =30)
@@ -190,7 +191,7 @@ def plot_after_train(args,df,predict):
                     predict=predict, 
                     threshold=threshod_series,
                     save_dir=os.path.join(args['plot_dir'],args['dataset_name']),
-                    segment=500
+                    segment=150
                      )
 
 
@@ -218,7 +219,7 @@ def diffience2(series,window=1):
     
     
 def plot_generate():
-    anomaly_types = ["point_global","point_contextual","collective_global","collective_seasonal","collective_trend"]
+    anomaly_types = ["point_global","point_contextual","collective_shapelet","collective_seasonal","collective_trend"]
     plt.figure(figsize=(15, 8))
     for index,anomaly_type in enumerate(anomaly_types):
         data_dir = "datasets/SYN"
@@ -230,7 +231,7 @@ def plot_generate():
         
         plt.subplot(2,5,index+1)
         plt.plot(df[value_col],color='black', linewidth = 1)
-        plt.scatter(x=a.index,y=a[value_col],color='red', s = 1)
+        plt.scatter(x=a.index,y=a[value_col],color='red', s = 10)
         title = " ".join(anomaly_type.split("_"))
         plt.title(title)
         plt.legend(fontsize=1)
